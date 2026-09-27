@@ -1,0 +1,10 @@
+# Samsung's manuals are downloaded at build time and are not redistributed here
+manuals/
+# generated images and YAML
+build/
+# your own appliance photos
+images/*.png
+images/*.jpg
+__pycache__/
+.venv/
+.DS_Store

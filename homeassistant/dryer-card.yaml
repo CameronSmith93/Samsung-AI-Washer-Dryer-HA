@@ -1,0 +1,293 @@
+# Dryer card: Dashboard > Edit > Add card > Manual, then paste.
+type: picture-elements
+image: /local/samsung-laundry/dryer-bg.png
+elements:
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_dryer_power
+    state: 'on'
+  elements:
+  - type: image
+    image: /local/samsung-laundry/dryer-base.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_dryer_power
+    state: 'on'
+  - entity: switch.laundry_room_dryer_wrinkle_prevent
+    state: 'on'
+  elements:
+  - type: image
+    image: /local/samsung-laundry/dryer-wrinkle-3.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_dryer_power
+    state: 'on'
+  - entity: sensor.laundry_room_dryer_machine_state
+    state_not: stop
+  elements:
+  - type: image
+    image: /local/samsung-laundry/blank.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+    entity: sensor.samsung_dryer_display_hours
+    state_image:
+      '1': /local/samsung-laundry/time-h-1.png
+      '2': /local/samsung-laundry/time-h-2.png
+      '3': /local/samsung-laundry/time-h-3.png
+      '4': /local/samsung-laundry/time-h-4.png
+      '5': /local/samsung-laundry/time-h-5.png
+      '6': /local/samsung-laundry/time-h-6.png
+      '7': /local/samsung-laundry/time-h-7.png
+      '8': /local/samsung-laundry/time-h-8.png
+      '9': /local/samsung-laundry/time-h-9.png
+  - type: image
+    image: /local/samsung-laundry/blank.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+    entity: sensor.samsung_dryer_display_minutes
+    state_image:
+      '00': /local/samsung-laundry/time-m-00.png
+      '01': /local/samsung-laundry/time-m-01.png
+      '02': /local/samsung-laundry/time-m-02.png
+      '03': /local/samsung-laundry/time-m-03.png
+      '04': /local/samsung-laundry/time-m-04.png
+      '05': /local/samsung-laundry/time-m-05.png
+      '06': /local/samsung-laundry/time-m-06.png
+      '07': /local/samsung-laundry/time-m-07.png
+      08: /local/samsung-laundry/time-m-08.png
+      09: /local/samsung-laundry/time-m-09.png
+      '10': /local/samsung-laundry/time-m-10.png
+      '11': /local/samsung-laundry/time-m-11.png
+      '12': /local/samsung-laundry/time-m-12.png
+      '13': /local/samsung-laundry/time-m-13.png
+      '14': /local/samsung-laundry/time-m-14.png
+      '15': /local/samsung-laundry/time-m-15.png
+      '16': /local/samsung-laundry/time-m-16.png
+      '17': /local/samsung-laundry/time-m-17.png
+      '18': /local/samsung-laundry/time-m-18.png
+      '19': /local/samsung-laundry/time-m-19.png
+      '20': /local/samsung-laundry/time-m-20.png
+      '21': /local/samsung-laundry/time-m-21.png
+      '22': /local/samsung-laundry/time-m-22.png
+      '23': /local/samsung-laundry/time-m-23.png
+      '24': /local/samsung-laundry/time-m-24.png
+      '25': /local/samsung-laundry/time-m-25.png
+      '26': /local/samsung-laundry/time-m-26.png
+      '27': /local/samsung-laundry/time-m-27.png
+      '28': /local/samsung-laundry/time-m-28.png
+      '29': /local/samsung-laundry/time-m-29.png
+      '30': /local/samsung-laundry/time-m-30.png
+      '31': /local/samsung-laundry/time-m-31.png
+      '32': /local/samsung-laundry/time-m-32.png
+      '33': /local/samsung-laundry/time-m-33.png
+      '34': /local/samsung-laundry/time-m-34.png
+      '35': /local/samsung-laundry/time-m-35.png
+      '36': /local/samsung-laundry/time-m-36.png
+      '37': /local/samsung-laundry/time-m-37.png
+      '38': /local/samsung-laundry/time-m-38.png
+      '39': /local/samsung-laundry/time-m-39.png
+      '40': /local/samsung-laundry/time-m-40.png
+      '41': /local/samsung-laundry/time-m-41.png
+      '42': /local/samsung-laundry/time-m-42.png
+      '43': /local/samsung-laundry/time-m-43.png
+      '44': /local/samsung-laundry/time-m-44.png
+      '45': /local/samsung-laundry/time-m-45.png
+      '46': /local/samsung-laundry/time-m-46.png
+      '47': /local/samsung-laundry/time-m-47.png
+      '48': /local/samsung-laundry/time-m-48.png
+      '49': /local/samsung-laundry/time-m-49.png
+      '50': /local/samsung-laundry/time-m-50.png
+      '51': /local/samsung-laundry/time-m-51.png
+      '52': /local/samsung-laundry/time-m-52.png
+      '53': /local/samsung-laundry/time-m-53.png
+      '54': /local/samsung-laundry/time-m-54.png
+      '55': /local/samsung-laundry/time-m-55.png
+      '56': /local/samsung-laundry/time-m-56.png
+      '57': /local/samsung-laundry/time-m-57.png
+      '58': /local/samsung-laundry/time-m-58.png
+      '59': /local/samsung-laundry/time-m-59.png
+  - type: image
+    image: /local/samsung-laundry/blank.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+    entity: sensor.samsung_dryer_display_progress
+    state_image:
+      '0': /local/samsung-laundry/bar-0.png
+      '1': /local/samsung-laundry/bar-1.png
+      '2': /local/samsung-laundry/bar-2.png
+      '3': /local/samsung-laundry/bar-3.png
+      '4': /local/samsung-laundry/bar-4.png
+      '5': /local/samsung-laundry/bar-5.png
+      '6': /local/samsung-laundry/bar-6.png
+      '7': /local/samsung-laundry/bar-7.png
+      '8': /local/samsung-laundry/bar-8.png
+      '9': /local/samsung-laundry/bar-9.png
+      '10': /local/samsung-laundry/bar-10.png
+      '11': /local/samsung-laundry/bar-11.png
+      '12': /local/samsung-laundry/bar-12.png
+      '13': /local/samsung-laundry/bar-13.png
+      '14': /local/samsung-laundry/bar-14.png
+      '15': /local/samsung-laundry/bar-15.png
+      '16': /local/samsung-laundry/bar-16.png
+      '17': /local/samsung-laundry/bar-17.png
+      '18': /local/samsung-laundry/bar-18.png
+      '19': /local/samsung-laundry/bar-19.png
+      '20': /local/samsung-laundry/bar-20.png
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_dryer_power
+    state: 'on'
+  - entity: sensor.laundry_room_dryer_machine_state
+    state: run
+  elements:
+  - type: image
+    image: /local/samsung-laundry/blank.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+    entity: sensor.laundry_room_dryer_job_state
+    state_image:
+      drying: /local/samsung-laundry/dryer-stage-drying.png
+      ai_drying: /local/samsung-laundry/dryer-stage-ai_drying.png
+      cooling: /local/samsung-laundry/dryer-stage-cooling.png
+      wrinkle_prevent: /local/samsung-laundry/dryer-stage-wrinkle_prevent.png
+      finished: /local/samsung-laundry/dryer-stage-finished.png
+      weight_sensing: /local/samsung-laundry/dryer-stage-weight_sensing.png
+      delay_wash: /local/samsung-laundry/dryer-stage-delay_wash.png
+      refreshing: /local/samsung-laundry/dryer-stage-refreshing.png
+      dehumidifying: /local/samsung-laundry/dryer-stage-dehumidifying.png
+      continuous_dehumidifying: /local/samsung-laundry/dryer-stage-continuous_dehumidifying.png
+      sanitizing: /local/samsung-laundry/dryer-stage-sanitizing.png
+      internal_care: /local/samsung-laundry/dryer-stage-internal_care.png
+      freeze_protection: /local/samsung-laundry/dryer-stage-freeze_protection.png
+      thawing_frozen_inside: /local/samsung-laundry/dryer-stage-thawing_frozen_inside.png
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_dryer_power
+    state: 'on'
+  - entity: sensor.laundry_room_dryer_machine_state
+    state: pause
+  elements:
+  - type: image
+    image: /local/samsung-laundry/dryer-stage-paused.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+- type: image
+  image: /local/samsung-laundry/smart-control-button.png
+  tap_action:
+    action: none
+  hold_action:
+    action: none
+  style:
+    left: 69.583%
+    top: 50.000%
+    width: 55.833%
+    pointer-events: none
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_dryer_power
+    state: 'on'
+  - entity: binary_sensor.laundry_room_dryer_remote_control
+    state_not: 'on'
+  elements:
+  - type: image
+    image: /local/samsung-laundry/wifi.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_dryer_power
+    state: 'on'
+  - entity: binary_sensor.laundry_room_dryer_remote_control
+    state: 'on'
+  elements:
+  - type: image
+    image: /local/samsung-laundry/wifi-smart-control.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_dryer_power
+    state: 'on'
+  - entity: binary_sensor.laundry_room_dryer_child_lock
+    state: 'on'
+  elements:
+  - type: image
+    image: /local/samsung-laundry/childlock.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+grid_options:
+  columns: 12
