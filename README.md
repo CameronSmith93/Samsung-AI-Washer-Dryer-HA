@@ -9,6 +9,14 @@ same places, the faint unlit segments, and the same behaviour when a cycle is ru
 
 ## What it looks like
 
+![Washer card](docs/washer-card.png)
+
+![Dryer card](docs/dryer-card.png)
+
+The appliance photo on the left is optional; see step 4 of the setup below.
+
+### Close-ups
+
 **Washer, mid-spin.** The door lock is lit and the spin speed shows during the spin phase.
 
 ![Washer card mid-spin](docs/washer-running.png)
@@ -24,8 +32,6 @@ same places, the faint unlit segments, and the same behaviour when a cycle is ru
 **Dryer, paused.**
 
 ![Dryer card paused](docs/dryer-paused.png)
-
-These show the control panel. If you add a photo of your appliance, the card shows it to the left.
 
 ## What the cards show
 

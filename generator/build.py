@@ -69,10 +69,18 @@ DEVICE_CX, DEVICE_H, DEVICE_BOTTOM = 190, 257, 326
 SX0, SY0, SX1, SY1 = 400, 125, 936, 275        # control strip = overlay canvas
 WW, WH = SX1 - SX0, SY1 - SY0
 DX0, DY0, DX1, DY1 = 552, 138, 898, 241        # display window; button icons sit below it on the glass
-TX0, TX1 = 562, 702                            # text zone (stage, time, progress bar)
+TX0, TX1 = 562, 692                            # text zone (stage, time, progress bar)
 STAGE_Y, TIME_Y, BAR_Y = 184, 222, 234
-DH = 30                                        # 7-segment digit height
-TEMP_X, RINSE_X, SPIN_X, COL_X = 732, 772, 828, 884   # '88'  '8'  '1888'  status column
+DH = 28                                        # 7-segment digit height
+_W, _G = DH * 0.56, DH * 0.16                  # digit width and gap (see seg_text)
+_X0 = 703                                      # left edge of the '88' group
+TEMP_X = _X0 + (2 * _W + _G) / 2                                   # '88'   (temperature / dry level)
+RINSE_X = _X0 + 2 * _W + _G + 10 + _W / 2                          # '8'    (rinse count / Wrinkle Prevent)
+SPIN_X = _X0 + 2 * _W + _G + 10 + _W + 6 + (4 * _W + 3 * _G) / 2   # '1888' (spin speed)
+# status block to the right of the digits, as in the manuals: Wi-Fi | Smart Control over door lock | child lock
+STAT_L, STAT_R = SPIN_X + (4 * _W + 3 * _G) / 2 + 18, SPIN_X + (4 * _W + 3 * _G) / 2 + 37
+STAT_TOP, STAT_BOT = 184.5, 200.5
+HAND_X = STAT_L + 8
 IY = 256                                       # button icon row (below the display window)
 OVERLAY_STYLE = {'left': f'{(SX0 + SX1) / 2 / W * 100:.3f}%', 'top': f'{(SY0 + SY1) / 2 / H * 100:.3f}%',
                  'width': f'{WW / W * 100:.3f}%', 'pointer-events': 'none'}
@@ -304,8 +312,8 @@ def build_images(out, raw, washer_photo, dryer_photo):
         'power': manual_icon(raw, 'power', target_h=21, stroke=2.2, rgb=PRINT_G),
         'play': manual_icon(raw, 'play', target_h=19, stroke=2.2, rgb=PRINT_G),
         'temp': manual_icon(raw, 'temp', target_h=19), 'spin': manual_icon(raw, 'spin', target_h=19),
-        'hand': manual_icon(raw, 'hand', target_h=17.5), 'doorlock': manual_icon(raw, 'doorlock', target_h=15),
-        'childlock': manual_icon(raw, 'childlock', target_h=15), 'sc_lit': manual_icon(raw, 'sc_lit', target_h=16),
+        'hand': manual_icon(raw, 'hand', target_h=17.5), 'doorlock': manual_icon(raw, 'doorlock', target_h=14),
+        'childlock': manual_icon(raw, 'childlock', target_h=14), 'sc_lit': manual_icon(raw, 'sc_lit', target_h=15),
         'sc_printed': manual_icon(raw, 'sc_printed', target_h=25, stroke=1.4, rgb=PRINT_T),
         'level': manual_icon(raw, 'level', target_w=22, stroke=1.8), 'wrinkle': manual_icon(raw, 'wrinkle', target_h=19, stroke=1.8),
         'rinse': rinse_icon(), 'wifi': wifi_icon(),
@@ -341,7 +349,7 @@ def build_images(out, raw, washer_photo, dryer_photo):
     for txt, x in (('88', TEMP_X), ('8', RINSE_X), ('1888', SPIN_X)):
         seg_text(o, txt, *L(x, 192), col=GHOST)
     lit = ov()
-    put(lit, I['temp'], TEMP_X, IY - 1); put(lit, I['rinse'], RINSE_X, IY); put(lit, I['spin'], SPIN_X, IY); put(lit, I['hand'], COL_X + 1, IY)
+    put(lit, I['temp'], TEMP_X, IY - 1); put(lit, I['rinse'], RINSE_X, IY); put(lit, I['spin'], SPIN_X, IY); put(lit, I['hand'], HAND_X, IY)
     o.alpha_composite(glow(lit)); save(o, 'washer-base.png')
     for k, v in WASHER_TEMPS.items():
         o = ov(); seg_text(o, v, *L(TEMP_X, 192)); save(glow(o), f'washer-temp-{k}.png')
@@ -349,13 +357,13 @@ def build_images(out, raw, washer_photo, dryer_photo):
         o = ov(); seg_text(o, str(n), *L(RINSE_X, 192)); save(glow(o), f'washer-rinse-{n}.png')
     for k, v in WASHER_SPINS.items():
         o = ov(); seg_text(o, v, *L(SPIN_X, 192)); save(glow(o), f'washer-spin-{k}.png')
-    o = ov(); put(o, I['doorlock'], 868, 169); save(glow(o), 'washer-doorlock.png')
+    o = ov(); put(o, I['doorlock'], STAT_L, STAT_BOT); save(glow(o), 'washer-doorlock.png')
 
     # dryer: same cells; the dry-level icon is separate because it only lights on cycles that have a dry level
     o = ov()
     for txt, x in (('88', TEMP_X), ('8', RINSE_X), ('1888', SPIN_X)):
         seg_text(o, txt, *L(x, 192), col=GHOST)
-    lit = ov(); put(lit, I['wrinkle'], RINSE_X, IY - 2); put(lit, I['hand'], COL_X + 1, IY)
+    lit = ov(); put(lit, I['wrinkle'], RINSE_X, IY - 2); put(lit, I['hand'], HAND_X, IY)
     o.alpha_composite(glow(lit)); save(o, 'dryer-base.png')
     o = ov(); put(o, I['level'], TEMP_X, IY - 1); save(glow(o), 'dryer-level.png')
     for n in '1234':
@@ -363,9 +371,9 @@ def build_images(out, raw, washer_photo, dryer_photo):
     o = ov(); seg_text(o, '3', *L(RINSE_X, 192)); save(glow(o), 'dryer-wrinkle-3.png')     # Wrinkle Prevent on = 3 hours
 
     # status icons (fixed 2x2 grid in the top-right of the display) and the printed Smart Control button
-    o = ov(); put(o, I['wifi'], 868, 152); save(glow(o), 'wifi.png')
-    o = ov(); put(o, I['wifi'], 868, 152); put(o, I['sc_lit'], 890, 152); save(glow(o), 'wifi-smart-control.png')
-    o = ov(); put(o, I['childlock'], 890, 169); save(glow(o), 'childlock.png')
+    o = ov(); put(o, I['wifi'], STAT_L, STAT_TOP); save(glow(o), 'wifi.png')
+    o = ov(); put(o, I['wifi'], STAT_L, STAT_TOP); put(o, I['sc_lit'], STAT_R, STAT_TOP); save(glow(o), 'wifi-smart-control.png')
+    o = ov(); put(o, I['childlock'], STAT_R, STAT_BOT); save(glow(o), 'childlock.png')
     o = ov(); put(o, I['sc_printed'], 917, 196); save(o, 'smart-control-button.png')
 
 
