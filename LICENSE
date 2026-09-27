@@ -21,5 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 This licence covers the code in this repository. It does not cover Samsung's
-artwork, which the build extracts from Samsung's manuals on your own machine,
-or the bundled DejaVu font (see fonts/LICENSE-DejaVu.txt).
+artwork (the panel icons in assets/icons/, the appliance photos in images/, and
+the images built from them), or the bundled DejaVu font (see
+fonts/LICENSE-DejaVu.txt).

@@ -2,59 +2,32 @@
 """
 Build the Samsung washer / dryer display replicas for Home Assistant.
 
-Produces, in build/samsung-laundry/:
-  * every overlay image the picture-elements cards need (rendered at 3x for sharp screens)
-  * washer-card.yaml and dryer-card.yaml (picture-elements cards)
-  * samsung_laundry_package.yaml (template sensors the cards read)
+Writes a folder laid out like Home Assistant's /config folder:
+  www/samsung-laundry/                    every image the cards need (rendered at 3x for sharp screens)
+  packages/samsung_laundry_package.yaml   template sensors the cards read
+  cards/washer-card.yaml, dryer-card.yaml picture-elements cards to paste into a dashboard
 
-Panel icons are extracted at build time from Samsung's own user manuals (vector artwork),
-so no Samsung artwork is stored in this repository. Run with --fetch-manuals first.
+The panel icons come from assets/icons/ (Samsung's artwork, cut from their user manuals by
+generator/extract_icons.py). The appliance photos default to images/washer.png and images/dryer.png.
 
 Usage:
-  python generator/build.py --fetch-manuals
   python generator/build.py [--washer-entities laundry_room_washer] [--dryer-entities laundry_room_dryer]
-                            [--washer-image images/washer.png] [--dryer-image images/dryer.png]
-                            [--www-path /local/samsung-laundry]
+                            [--washer-image images/washer.png] [--dryer-image images/dryer.png] [--no-photos]
+                            [--www-path /local/samsung-laundry] [--out build]
 """
 import argparse
-import hashlib
 import math
-import shutil
 import sys
-import urllib.request
 from pathlib import Path
 
 import numpy as np
-import pymupdf
 import yaml
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
-from scipy import ndimage
 
 ROOT = Path(__file__).resolve().parent.parent
 FONT = ROOT / 'fonts' / 'DejaVuSansCondensed.ttf'
+ICONS = ROOT / 'assets' / 'icons'
 K = 3                                   # render scale: images are drawn at 3x the card's 960x400 layout
-
-# ---------------------------------------------------------------------------------------------
-# Samsung manuals (official download centre). Icons are cut from the control-panel diagrams.
-# Coordinates are for these exact files, so they are pinned by SHA-256.
-# ---------------------------------------------------------------------------------------------
-MANUALS = {
-    'washer': dict(
-        file='washer-manual.pdf',
-        url='https://downloadcenter.samsung.com/content/UM/202604/20260408143907954/Web_IB_D-PJT_WASHER-MD_SimpleUX_EN_v1.pdf',
-        sha256='0f60add258fa3da0c8250cddaddd435dd0f7d5b8c89b64add912f25f53a52b27',
-        page=34, clip_px=(1090, 2050, 6040, 1780),
-        # windows in 1/6-scale preview pixels relative to the clip (x0, y0, x1, y1)
-        icons={'power': (20, 125, 62, 170), 'play': (330, 125, 375, 170), 'sc_lit': (900, 114, 924, 148),
-               'doorlock': (866, 146, 894, 174), 'childlock': (899, 146, 926, 174), 'temp': (640, 194, 668, 226),
-               'spin': (798, 194, 832, 226), 'hand': (878, 192, 912, 226), 'sc_printed': (954, 126, 988, 166)}),
-    'dryer': dict(
-        file='dryer-manual.pdf',
-        url='https://downloadcenter.samsung.com/content/UM/202304/20230425115323308/DC68-04400M-00_IB_B-PJT_DV9400B_SimpleUX_EN_pdf.pdf',
-        sha256='d5682f81974da77f17d2db44b6192ec3b897c9f889a7ac7ef0baa18747c23741',
-        page=29, clip_px=(820, 1780, 6050, 1990),
-        icons={'level': (622, 210, 662, 240), 'wrinkle': (704, 208, 744, 240)}),
-}
 
 # ---------------------------------------------------------------------------------------------
 # Layout (card is 960 x 400; the control strip and all overlays share one box)
@@ -143,32 +116,16 @@ def colour(alpha, rgb):
 
 
 # ---------------------------------------------------------------------------------------------
-# Icons from the manuals
+# Samsung icons (assets/icons: dark ink on white, as rendered from the manuals at 1200 dpi)
 # ---------------------------------------------------------------------------------------------
-def extract_icons(manual_dir):
+def load_icons():
     raw = {}
-    for dev, m in MANUALS.items():
-        doc = pymupdf.open(manual_dir / m['file'])
-        page = doc[m['page'] - 1]
-        x, y, w, h = m['clip_px']; pt = 72 / 1200
-        clip = pymupdf.Rect(x * pt, y * pt, (x + w) * pt, (y + h) * pt)
-        pix = page.get_pixmap(matrix=pymupdf.Matrix(1200 / 72, 1200 / 72), clip=clip, colorspace=pymupdf.csGRAY, alpha=False)
-        ink = 255 - np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width).astype(np.int32)
-        for name, (x0, y0, x1, y1) in m['icons'].items():
-            a = ink[y0 * 6:y1 * 6, x0 * 6:x1 * 6]
-            lab, n = ndimage.label(a > 100)
-            keep = np.zeros_like(a, bool)
-            for i in range(1, n + 1):                       # drop anything touching the window edge
-                ys, xs = np.nonzero(lab == i)
-                if ys.min() == 0 or xs.min() == 0 or ys.max() == a.shape[0] - 1 or xs.max() == a.shape[1] - 1:
-                    continue
-                keep |= lab == i
-            if not keep.any():
-                sys.exit(f'Could not find the {dev} "{name}" icon in the manual. Is it the pinned version?')
-            keep = ndimage.binary_dilation(keep, iterations=4)
-            b = np.where(keep, a, 0); ys, xs = np.nonzero(b > 100)
-            b = b[ys.min() - 4:ys.max() + 5, xs.min() - 4:xs.max() + 5]
-            raw[name] = Image.fromarray(np.clip(b, 0, 255).astype('uint8'))
+    for f in sorted(ICONS.glob('*.png')):
+        raw[f.stem] = Image.eval(Image.open(f).convert('L'), lambda v: 255 - v)     # ink intensity
+    missing = {'power', 'start-pause', 'temperature', 'spin', 'hand', 'door-lock', 'child-lock', 'smart-control',
+               'smart-control-button', 'dry-level', 'wrinkle-prevent'} - raw.keys()
+    if missing:
+        sys.exit(f'Missing icons in {ICONS}: {", ".join(sorted(missing))}')
     return raw
 
 
@@ -181,7 +138,7 @@ def stroke_of(a):
 
 
 def manual_icon(raw, name, target_h=None, target_w=None, stroke=1.5, rgb=LIT):
-    """Scale manual artwork to size, normalising line weight to `stroke` card pixels."""
+    """Scale Samsung's artwork to size, normalising line weight to `stroke` card pixels."""
     a = raw[name]
     s = (target_h * K / a.height) if target_h else (target_w * K / a.width)
     grow = int(round(stroke * K / s - stroke_of(a)))
@@ -310,12 +267,13 @@ def build_images(out, raw, washer_photo, dryer_photo):
     def save(img, name): img.save(out / name, optimize=True)
     I = {
         'power': manual_icon(raw, 'power', target_h=21, stroke=2.2, rgb=PRINT_G),
-        'play': manual_icon(raw, 'play', target_h=19, stroke=2.2, rgb=PRINT_G),
-        'temp': manual_icon(raw, 'temp', target_h=19), 'spin': manual_icon(raw, 'spin', target_h=19),
-        'hand': manual_icon(raw, 'hand', target_h=17.5), 'doorlock': manual_icon(raw, 'doorlock', target_h=14),
-        'childlock': manual_icon(raw, 'childlock', target_h=14), 'sc_lit': manual_icon(raw, 'sc_lit', target_h=15),
-        'sc_printed': manual_icon(raw, 'sc_printed', target_h=25, stroke=1.4, rgb=PRINT_T),
-        'level': manual_icon(raw, 'level', target_w=22, stroke=1.8), 'wrinkle': manual_icon(raw, 'wrinkle', target_h=19, stroke=1.8),
+        'play': manual_icon(raw, 'start-pause', target_h=19, stroke=2.2, rgb=PRINT_G),
+        'temp': manual_icon(raw, 'temperature', target_h=19), 'spin': manual_icon(raw, 'spin', target_h=19),
+        'hand': manual_icon(raw, 'hand', target_h=17.5), 'doorlock': manual_icon(raw, 'door-lock', target_h=14),
+        'childlock': manual_icon(raw, 'child-lock', target_h=14), 'sc_lit': manual_icon(raw, 'smart-control', target_h=15),
+        'sc_printed': manual_icon(raw, 'smart-control-button', target_h=25, stroke=1.4, rgb=PRINT_T),
+        'level': manual_icon(raw, 'dry-level', target_w=22, stroke=1.8),
+        'wrinkle': manual_icon(raw, 'wrinkle-prevent', target_h=19, stroke=1.8),
         'rinse': rinse_icon(), 'wifi': wifi_icon(),
     }
     save(background(washer_photo, (10, 10, 11), I), 'washer-bg.png')
@@ -501,65 +459,48 @@ def dump(obj, path, header):
 
 def write_yaml(out, www, we, de):
     wd, dd = 'samsung_washer_display', 'samsung_dryer_display'
-    dump(package([('Samsung washer display', we, wd), ('Samsung dryer display', de, dd)]), out / 'samsung_laundry_package.yaml',
+    (out / 'packages').mkdir(parents=True, exist_ok=True); (out / 'cards').mkdir(parents=True, exist_ok=True)
+    dump(package([('Samsung washer display', we, wd), ('Samsung dryer display', de, dd)]),
+         out / 'packages' / 'samsung_laundry_package.yaml',
          '# Home Assistant package: template sensors used by the washer and dryer cards.\n'
          '# Put this file in /config/packages/ (see README) and restart Home Assistant.\n')
-    dump(washer_card(www, we, wd), out / 'washer-card.yaml', '# Washer card: Dashboard > Edit > Add card > Manual, then paste.\n')
-    dump(dryer_card(www, de, dd), out / 'dryer-card.yaml', '# Dryer card: Dashboard > Edit > Add card > Manual, then paste.\n')
+    dump(washer_card(www, we, wd), out / 'cards' / 'washer-card.yaml',
+         '# Washer card: Dashboard > Edit > Add card > Manual, then paste.\n')
+    dump(dryer_card(www, de, dd), out / 'cards' / 'dryer-card.yaml',
+         '# Dryer card: Dashboard > Edit > Add card > Manual, then paste.\n')
+
+
+def image_dir(out, www):
+    """Where the images go under `out`, mirroring /config: /local/x is served from /config/www/x."""
+    return out / 'www' / www[len('/local/'):] if www.startswith('/local/') else out / 'www' / Path(www).name
 
 
 # =============================================================================================
-def fetch_manuals(manual_dir):
-    manual_dir.mkdir(parents=True, exist_ok=True)
-    for dev, m in MANUALS.items():
-        dest = manual_dir / m['file']
-        if not dest.exists():
-            print(f'Downloading the {dev} manual from Samsung...')
-            req = urllib.request.Request(m['url'], headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=120) as r, open(dest, 'wb') as f:
-                shutil.copyfileobj(r, f)
-        check_manual(dest, m)
-    print('Manuals OK.')
-
-
-def check_manual(path, m):
-    if not path.exists():
-        sys.exit(f'Missing {path}. Run with --fetch-manuals first.')
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    if digest != m['sha256']:
-        sys.exit(f'{path.name} is not the expected version (sha256 {digest[:12]}...). '
-                 'Delete it and run --fetch-manuals again.')
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--fetch-manuals', action='store_true', help='download the two Samsung manuals and exit')
-    ap.add_argument('--manuals', default=str(ROOT / 'manuals'), help='folder holding the manuals')
-    ap.add_argument('--out', default=str(ROOT / 'build' / 'samsung-laundry'), help='output folder')
-    ap.add_argument('--washer-image', help='front photo of your washer, PNG with a transparent background')
-    ap.add_argument('--dryer-image', help='front photo of your dryer, PNG with a transparent background')
+    ap.add_argument('--out', default=str(ROOT / 'build'), help='output folder (default: build/)')
+    ap.add_argument('--washer-image', default=str(ROOT / 'images' / 'washer.png'),
+                    help='front photo of the washer, PNG with a transparent background (default: images/washer.png)')
+    ap.add_argument('--dryer-image', default=str(ROOT / 'images' / 'dryer.png'),
+                    help='front photo of the dryer, PNG with a transparent background (default: images/dryer.png)')
+    ap.add_argument('--no-photos', action='store_true', help='leave the appliance photos out and show just the panel')
     ap.add_argument('--washer-entities', default='laundry_room_washer',
                     help='SmartThings entity prefix, e.g. laundry_room_washer for sensor.laundry_room_washer_machine_state')
     ap.add_argument('--dryer-entities', default='laundry_room_dryer', help='as above, for the dryer')
     ap.add_argument('--www-path', default='/local/samsung-laundry', help='URL path the images are served from')
     ap.add_argument('--yaml-only', action='store_true', help='write the YAML files only')
     a = ap.parse_args()
-    manual_dir, out = Path(a.manuals), Path(a.out)
-    if a.fetch_manuals:
-        fetch_manuals(manual_dir); return
-    out.mkdir(parents=True, exist_ok=True)
+    out, www = Path(a.out), a.www_path.rstrip('/')
     if not a.yaml_only:
-        for m in MANUALS.values():
-            check_manual(manual_dir / m['file'], m)
-        for p in (a.washer_image, a.dryer_image):
+        photos = (None, None) if a.no_photos else (a.washer_image, a.dryer_image)
+        for p in photos:
             if p and not Path(p).exists():
-                sys.exit(f'Image not found: {p}')
-        build_images(out, extract_icons(manual_dir), a.washer_image, a.dryer_image)
-    write_yaml(out, a.www_path.rstrip('/'), a.washer_entities, a.dryer_entities)
-    if a.yaml_only:
-        print(f'Wrote 3 YAML files to {out}')
-    else:
-        print(f"Built {len(list(out.glob('*.png')))} images and 3 YAML files in {out}")
+                sys.exit(f'Image not found: {p} (use --no-photos to build without the appliance photos)')
+        imgs = image_dir(out, www); imgs.mkdir(parents=True, exist_ok=True)
+        build_images(imgs, load_icons(), *photos)
+        print(f"Built {len(list(imgs.glob('*.png')))} images in {imgs}")
+    write_yaml(out, www, a.washer_entities, a.dryer_entities)
+    print(f"Wrote the cards to {out / 'cards'} and the template sensors to {out / 'packages'}")
 
 
 if __name__ == '__main__':

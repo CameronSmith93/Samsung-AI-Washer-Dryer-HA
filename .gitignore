@@ -1,10 +1,7 @@
-# Samsung's manuals are downloaded at build time and are not redistributed here
+# Samsung manuals, downloaded by generator/extract_icons.py
 manuals/
-# generated images and YAML
+# output of generator/build.py (the ready-made set lives in homeassistant/)
 build/
-# your own appliance photos
-images/*.png
-images/*.jpg
 __pycache__/
 .venv/
 .DS_Store

@@ -1,0 +1,5 @@
+# Only needed for generator/extract_icons.py (re-extracting the icons from the manuals)
+pillow>=10.0
+numpy>=1.24
+scipy>=1.10
+pymupdf>=1.24
