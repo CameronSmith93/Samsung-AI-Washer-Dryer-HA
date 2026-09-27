@@ -7,6 +7,26 @@ Home Assistant SmartThings integration.
 The aim is to show exactly what the real display shows, and nothing it doesn't: the same icons in the
 same places, the faint unlit segments, and the same behaviour when a cycle is running, paused or idle.
 
+## What it looks like
+
+**Washer, mid-spin.** The door lock is lit and the spin speed shows during the spin phase.
+
+![Washer card mid-spin](docs/washer-running.png)
+
+**Washer, idle.** The temperature, rinse count and spin speed are shown, with Smart Control on.
+
+![Washer card idle](docs/washer-idle.png)
+
+**Dryer, drying.** Wrinkle Prevent is on, shown as 3 (hours).
+
+![Dryer card drying](docs/dryer-running.png)
+
+**Dryer, paused.**
+
+![Dryer card paused](docs/dryer-paused.png)
+
+These show the control panel. If you add a photo of your appliance, the card shows it to the left.
+
 ## What the cards show
 
 | On the card | Comes from |
@@ -116,9 +136,12 @@ building.
 
 ## Trademarks and credits
 
+Made by Cameron Smith, with Claude (Anthropic).
+
 Samsung, Bespoke and SmartThings are trademarks of Samsung Electronics. This project isn't affiliated
-with or endorsed by Samsung. The panel icons are Samsung's artwork, taken from their publicly
-available manuals when you run the build; they are not included here.
+with or endorsed by Samsung. The panel icons are Samsung's artwork. The build extracts them from
+Samsung's publicly available manuals on your machine; the icon files themselves aren't stored in
+this repository, apart from appearing in the screenshots above.
 
 Text is set in DejaVu Sans Condensed (`fonts/`, Bitstream Vera licence).
 
