@@ -72,6 +72,10 @@ DRYER_STAGES = {'drying': ('Drying', 1), 'ai_drying': ('Drying', 1), 'cooling': 
 WASHER_TEMPS = {'cold': 'Co', '20': '20', '30': '30', '40': '40', '60': '60', '90': '90'}
 WASHER_SPINS = {'rinse_hold': '  --', 'no_spin': '   0', '400': ' 400', '800': ' 800',
                 '1000': '1000', '1200': '1200', '1400': '1400'}
+# Delay End shows the finish time (NEXT DAY 5:59 AM) instead of the time left: the hours slot carries the
+# hour, AM/PM and NEXT DAY, the minutes slot ':59'. (hour, am/pm, next day) -> (sensor state, image)
+CLOCK = {(h, ap, nd): (f'{"next day " if nd else ""}{h} {ap}', f'clock-h-{h}-{ap}{"-next" if nd else ""}.png')
+         for h in range(1, 13) for ap in ('am', 'pm') for nd in (False, True)}
 
 
 # =============================================================================================
@@ -212,6 +216,15 @@ def seg_text(img, text, cx, cy, h=DH, col=LIT):
         seg_digit(d, c, x, cy, h, col); x += w + gap
 
 
+def next_day(d, right):
+    """The stacked NEXT / DAY label, with DAY spread to the width of NEXT as on the display."""
+    f = font(10); w = d.textlength('NEXT', font=f); x = right - w
+    d.text((x - SX0, TIME_Y - 9 - SY0), 'NEXT', font=f, fill=LIT, anchor='ls')
+    ws = [d.textlength(c, font=f) for c in 'DAY']; gap = (w - sum(ws)) / 2
+    for c, cw in zip('DAY', ws):
+        d.text((x - SX0, TIME_Y - SY0), c, font=f, fill=LIT, anchor='ls'); x += cw + gap
+
+
 def text_img(parts, x, y_base, anchor='left'):
     o = ov(); d = KD(o)
     fonts = [font(s) for _, s in parts]
@@ -294,6 +307,19 @@ def build_images(out, raw, washer_photo, dryer_photo):
         save(glow(text_img([(f'{mm:02d}', 30), ('min', 14)], TX1, TIME_Y, 'right')), f'time-m-{mm:02d}.png')
     for hh in range(1, 10):
         save(glow(text_img([(str(hh), 30), ('hr', 14)], TX1 - wmin - 6, TIME_Y, 'right')), f'time-h-{hh}.png')
+    fd, fa = font(30), font(18)                                  # Delay End finish time
+    xa = TX1 - max(d0.textlength(t, font=fa) for t in ('AM', 'PM'))
+    xc = xa - 2 - d0.textlength(':00', font=fd)                # the colon; the hour ends here
+    for mm in range(60):
+        o = ov(); KD(o).text((xc - SX0, TIME_Y - SY0), f':{mm:02d}', font=fd, fill=LIT, anchor='ls')
+        save(glow(o), f'clock-m-{mm:02d}.png')
+    for (hh, ap, nd), (_, name) in CLOCK.items():
+        o = ov(); d = KD(o)
+        d.text((xc - SX0, TIME_Y - SY0), str(hh), font=fd, fill=LIT, anchor='rs')
+        d.text((xa - SX0, TIME_Y - SY0), ap.upper(), font=fa, fill=LIT, anchor='ls')
+        if nd:
+            next_day(d, xc - d.textlength(str(hh), font=fd) - 3)
+        save(glow(o), name)
     for n in range(21):                      # light-grey track, lit part fills from the left with elapsed time
         o = ov(); y = BAR_Y - SY0
         KD(o).line([(TX0 - SX0, y), (TX1 - SX0, y)], fill=(190, 190, 193, 255), width=2.6)
@@ -358,8 +384,9 @@ def not_(entity, state): return {'entity': entity, 'state_not': state}
 
 
 def time_and_bar(www, disp):
-    return [mapped(www, f'sensor.{disp}_hours', {str(h): f'time-h-{h}.png' for h in range(1, 10)}),
-            mapped(www, f'sensor.{disp}_minutes', {f'{m:02d}': f'time-m-{m:02d}.png' for m in range(60)}),
+    return [mapped(www, f'sensor.{disp}_hours', {**{str(h): f'time-h-{h}.png' for h in range(1, 10)}, **dict(CLOCK.values())}),
+            mapped(www, f'sensor.{disp}_minutes', {**{f'{m:02d}': f'time-m-{m:02d}.png' for m in range(60)},
+                                                   **{f':{m:02d}': f'clock-m-{m:02d}.png' for m in range(60)}}),
             mapped(www, f'sensor.{disp}_progress', {str(n): f'bar-{n}.png' for n in range(21)})]
 
 
@@ -413,21 +440,29 @@ def package(machines):
         paused_at = f"states.sensor.{e}_machine_state.last_changed if ms == 'pause' else now()"
         remaining = (f"{{%- set ms = {ms} -%}}\n{{%- set end = {end} -%}}\n"
                      f"{{%- set running = ms in ['run', 'pause'] and end is not none -%}}\n"
-                     f"{{%- set m = ((end - ({paused_at})).total_seconds() / 60) | round(0, 'ceil') | int if running else 0 -%}}\n")
+                     f"{{%- set m = ((end - ({paused_at})).total_seconds() / 60) | round(0, 'ceil') | int if running else 0 -%}}\n"
+                     # Delay End: the finish time instead. SmartThings recalculates the completion time from the
+                     # minutes left, so it drifts a few seconds either side of the minute the display shows
+                     f"{{%- set delay = states('sensor.{e}_job_state') == 'delay_wash' -%}}\n"
+                     "{%- set at = as_local(end + timedelta(seconds=30)) if running else none -%}\n")
         sensors += [
             {'name': f'{label} cycle start', 'unique_id': f'{disp}_cycle_start', 'icon': 'mdi:timer-play-outline',
              'state': (f"{{%- set ms = {ms} -%}}\n"
                        "{%- set prev = this.state if this is defined and this.state is defined and this.state not in ['unknown', 'unavailable', ''] else '' -%}\n"
                        "{%- if ms in ['unknown', 'unavailable'] -%}{{ prev }}\n"
-                       "{%- elif ms in ['run', 'pause'] -%}\n"
+                       # a delayed cycle starts when the delay ends, not when the countdown to it starts
+                       f"{{%- elif ms in ['run', 'pause'] and states('sensor.{e}_job_state') != 'delay_wash' -%}}\n"
                        "{%- if prev -%}{{ prev }}\n"
-                       f"{{%- elif ms == 'run' -%}}{{{{ states.sensor.{e}_machine_state.last_changed.isoformat() }}}}\n"
+                       f"{{%- elif ms == 'run' -%}}{{{{ ([states.sensor.{e}_machine_state.last_changed, states.sensor.{e}_job_state.last_changed] | max).isoformat() }}}}\n"
                        f"{{%- else -%}}{{{{ states.sensor.{e}_job_state.last_changed.isoformat() }}}}\n"
                        "{%- endif -%}\n{%- endif -%}")},
             {'name': f'{label} hours', 'unique_id': f'{disp}_hours', 'icon': 'mdi:monitor',
-             'state': remaining + "{%- if running and m >= 60 -%}{{ m // 60 }}{%- endif -%}"},
+             'state': remaining + ("{%- if running and delay -%}\n"
+                                   "{{ 'next day ' if at.date() > now().date() else '' }}{{ at.hour % 12 or 12 }} {{ 'am' if at.hour < 12 else 'pm' }}\n"
+                                   "{%- elif running and m >= 60 -%}{{ m // 60 }}{%- endif -%}")},
             {'name': f'{label} minutes', 'unique_id': f'{disp}_minutes', 'icon': 'mdi:monitor',
-             'state': remaining + "{%- if running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}"},
+             'state': remaining + ("{%- if running and delay -%}{{ ':%02d' | format(at.minute) }}\n"
+                                   "{%- elif running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}")},
             {'name': f'{label} progress', 'unique_id': f'{disp}_progress', 'icon': 'mdi:monitor',
              'state': (f"{{%- set ms = {ms} -%}}\n{{%- set end = {end} -%}}\n"
                        f"{{%- set start = states('sensor.{disp}_cycle_start') | as_datetime(none) -%}}\n"

@@ -65,6 +65,54 @@ elements:
       '7': /local/samsung-laundry/time-h-7.png
       '8': /local/samsung-laundry/time-h-8.png
       '9': /local/samsung-laundry/time-h-9.png
+      1 am: /local/samsung-laundry/clock-h-1-am.png
+      next day 1 am: /local/samsung-laundry/clock-h-1-am-next.png
+      1 pm: /local/samsung-laundry/clock-h-1-pm.png
+      next day 1 pm: /local/samsung-laundry/clock-h-1-pm-next.png
+      2 am: /local/samsung-laundry/clock-h-2-am.png
+      next day 2 am: /local/samsung-laundry/clock-h-2-am-next.png
+      2 pm: /local/samsung-laundry/clock-h-2-pm.png
+      next day 2 pm: /local/samsung-laundry/clock-h-2-pm-next.png
+      3 am: /local/samsung-laundry/clock-h-3-am.png
+      next day 3 am: /local/samsung-laundry/clock-h-3-am-next.png
+      3 pm: /local/samsung-laundry/clock-h-3-pm.png
+      next day 3 pm: /local/samsung-laundry/clock-h-3-pm-next.png
+      4 am: /local/samsung-laundry/clock-h-4-am.png
+      next day 4 am: /local/samsung-laundry/clock-h-4-am-next.png
+      4 pm: /local/samsung-laundry/clock-h-4-pm.png
+      next day 4 pm: /local/samsung-laundry/clock-h-4-pm-next.png
+      5 am: /local/samsung-laundry/clock-h-5-am.png
+      next day 5 am: /local/samsung-laundry/clock-h-5-am-next.png
+      5 pm: /local/samsung-laundry/clock-h-5-pm.png
+      next day 5 pm: /local/samsung-laundry/clock-h-5-pm-next.png
+      6 am: /local/samsung-laundry/clock-h-6-am.png
+      next day 6 am: /local/samsung-laundry/clock-h-6-am-next.png
+      6 pm: /local/samsung-laundry/clock-h-6-pm.png
+      next day 6 pm: /local/samsung-laundry/clock-h-6-pm-next.png
+      7 am: /local/samsung-laundry/clock-h-7-am.png
+      next day 7 am: /local/samsung-laundry/clock-h-7-am-next.png
+      7 pm: /local/samsung-laundry/clock-h-7-pm.png
+      next day 7 pm: /local/samsung-laundry/clock-h-7-pm-next.png
+      8 am: /local/samsung-laundry/clock-h-8-am.png
+      next day 8 am: /local/samsung-laundry/clock-h-8-am-next.png
+      8 pm: /local/samsung-laundry/clock-h-8-pm.png
+      next day 8 pm: /local/samsung-laundry/clock-h-8-pm-next.png
+      9 am: /local/samsung-laundry/clock-h-9-am.png
+      next day 9 am: /local/samsung-laundry/clock-h-9-am-next.png
+      9 pm: /local/samsung-laundry/clock-h-9-pm.png
+      next day 9 pm: /local/samsung-laundry/clock-h-9-pm-next.png
+      10 am: /local/samsung-laundry/clock-h-10-am.png
+      next day 10 am: /local/samsung-laundry/clock-h-10-am-next.png
+      10 pm: /local/samsung-laundry/clock-h-10-pm.png
+      next day 10 pm: /local/samsung-laundry/clock-h-10-pm-next.png
+      11 am: /local/samsung-laundry/clock-h-11-am.png
+      next day 11 am: /local/samsung-laundry/clock-h-11-am-next.png
+      11 pm: /local/samsung-laundry/clock-h-11-pm.png
+      next day 11 pm: /local/samsung-laundry/clock-h-11-pm-next.png
+      12 am: /local/samsung-laundry/clock-h-12-am.png
+      next day 12 am: /local/samsung-laundry/clock-h-12-am-next.png
+      12 pm: /local/samsung-laundry/clock-h-12-pm.png
+      next day 12 pm: /local/samsung-laundry/clock-h-12-pm-next.png
   - type: image
     image: /local/samsung-laundry/blank.png
     tap_action:
@@ -138,6 +186,66 @@ elements:
       '57': /local/samsung-laundry/time-m-57.png
       '58': /local/samsung-laundry/time-m-58.png
       '59': /local/samsung-laundry/time-m-59.png
+      :00: /local/samsung-laundry/clock-m-00.png
+      :01: /local/samsung-laundry/clock-m-01.png
+      :02: /local/samsung-laundry/clock-m-02.png
+      :03: /local/samsung-laundry/clock-m-03.png
+      :04: /local/samsung-laundry/clock-m-04.png
+      :05: /local/samsung-laundry/clock-m-05.png
+      :06: /local/samsung-laundry/clock-m-06.png
+      :07: /local/samsung-laundry/clock-m-07.png
+      :08: /local/samsung-laundry/clock-m-08.png
+      :09: /local/samsung-laundry/clock-m-09.png
+      :10: /local/samsung-laundry/clock-m-10.png
+      :11: /local/samsung-laundry/clock-m-11.png
+      :12: /local/samsung-laundry/clock-m-12.png
+      :13: /local/samsung-laundry/clock-m-13.png
+      :14: /local/samsung-laundry/clock-m-14.png
+      :15: /local/samsung-laundry/clock-m-15.png
+      :16: /local/samsung-laundry/clock-m-16.png
+      :17: /local/samsung-laundry/clock-m-17.png
+      :18: /local/samsung-laundry/clock-m-18.png
+      :19: /local/samsung-laundry/clock-m-19.png
+      :20: /local/samsung-laundry/clock-m-20.png
+      :21: /local/samsung-laundry/clock-m-21.png
+      :22: /local/samsung-laundry/clock-m-22.png
+      :23: /local/samsung-laundry/clock-m-23.png
+      :24: /local/samsung-laundry/clock-m-24.png
+      :25: /local/samsung-laundry/clock-m-25.png
+      :26: /local/samsung-laundry/clock-m-26.png
+      :27: /local/samsung-laundry/clock-m-27.png
+      :28: /local/samsung-laundry/clock-m-28.png
+      :29: /local/samsung-laundry/clock-m-29.png
+      :30: /local/samsung-laundry/clock-m-30.png
+      :31: /local/samsung-laundry/clock-m-31.png
+      :32: /local/samsung-laundry/clock-m-32.png
+      :33: /local/samsung-laundry/clock-m-33.png
+      :34: /local/samsung-laundry/clock-m-34.png
+      :35: /local/samsung-laundry/clock-m-35.png
+      :36: /local/samsung-laundry/clock-m-36.png
+      :37: /local/samsung-laundry/clock-m-37.png
+      :38: /local/samsung-laundry/clock-m-38.png
+      :39: /local/samsung-laundry/clock-m-39.png
+      :40: /local/samsung-laundry/clock-m-40.png
+      :41: /local/samsung-laundry/clock-m-41.png
+      :42: /local/samsung-laundry/clock-m-42.png
+      :43: /local/samsung-laundry/clock-m-43.png
+      :44: /local/samsung-laundry/clock-m-44.png
+      :45: /local/samsung-laundry/clock-m-45.png
+      :46: /local/samsung-laundry/clock-m-46.png
+      :47: /local/samsung-laundry/clock-m-47.png
+      :48: /local/samsung-laundry/clock-m-48.png
+      :49: /local/samsung-laundry/clock-m-49.png
+      :50: /local/samsung-laundry/clock-m-50.png
+      :51: /local/samsung-laundry/clock-m-51.png
+      :52: /local/samsung-laundry/clock-m-52.png
+      :53: /local/samsung-laundry/clock-m-53.png
+      :54: /local/samsung-laundry/clock-m-54.png
+      :55: /local/samsung-laundry/clock-m-55.png
+      :56: /local/samsung-laundry/clock-m-56.png
+      :57: /local/samsung-laundry/clock-m-57.png
+      :58: /local/samsung-laundry/clock-m-58.png
+      :59: /local/samsung-laundry/clock-m-59.png
   - type: image
     image: /local/samsung-laundry/blank.png
     tap_action:

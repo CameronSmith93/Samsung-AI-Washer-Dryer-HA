@@ -32,6 +32,11 @@ paused or idle.
 
 ![Dryer card paused](docs/dryer-paused.png)
 
+**Dryer, Delay End.** As on the real display, a delayed cycle shows when it will finish instead of
+the time left.
+
+![Dryer card with Delay End](docs/dryer-delay-end.png)
+
 ### The Samsung symbols
 
 The symbols are Samsung's own, cut from the control-panel diagrams in the washer and dryer manuals.
@@ -44,7 +49,8 @@ They're in [`assets/icons/`](assets/icons/), with the manual and page each one c
 | On the card | Comes from |
 |---|---|
 | Stage line (`Washing ›››`, `Drying ›››`, `Paused`) | machine state and job state |
-| Time left and progress bar | the completion time, frozen while paused |
+| Time left and progress bar | the completion time, frozen while paused. After Delay End, the bar starts when the cycle does |
+| Finish time during Delay End (`NEXT DAY 5:59 AM`) | the completion time, to the nearest minute |
 | Washer temperature / rinse count / spin speed digits | the water temperature, rinse cycles and spin level entities. All three when idle; while running, each one during its own phase, as on the real panel |
 | Dryer Wrinkle Prevent digit (`3` = 3 hours) | the Wrinkle Prevent switch |
 | Wi-Fi, Smart Control and child lock indicators | power, remote control and child lock entities |
@@ -72,7 +78,7 @@ Built and tested against a Samsung AI washer and a DV9400B-series heat-pump drye
 
 | Folder | What it holds |
 |---|---|
-| [`homeassistant/`](homeassistant/) | The ready-made set, laid out like Home Assistant's `/config` folder: 156 images in `www/samsung-laundry/`, the template sensors in `packages/`, and the two cards in `cards/` |
+| [`homeassistant/`](homeassistant/) | The ready-made set, laid out like Home Assistant's `/config` folder: 264 images in `www/samsung-laundry/`, the template sensors in `packages/`, and the two cards in `cards/` |
 | [`assets/icons/`](assets/icons/) | Samsung's panel symbols, as cut from the manuals |
 | [`images/`](images/) | The washer and dryer photos drawn beside each panel |
 | [`generator/`](generator/) | `build.py`, which draws every image and writes the YAML; `extract_icons.py`, which re-cuts the symbols from the manuals |

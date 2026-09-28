@@ -9,9 +9,9 @@ template:
       {%- set ms = states('sensor.laundry_room_washer_machine_state') -%}
       {%- set prev = this.state if this is defined and this.state is defined and this.state not in ['unknown', 'unavailable', ''] else '' -%}
       {%- if ms in ['unknown', 'unavailable'] -%}{{ prev }}
-      {%- elif ms in ['run', 'pause'] -%}
+      {%- elif ms in ['run', 'pause'] and states('sensor.laundry_room_washer_job_state') != 'delay_wash' -%}
       {%- if prev -%}{{ prev }}
-      {%- elif ms == 'run' -%}{{ states.sensor.laundry_room_washer_machine_state.last_changed.isoformat() }}
+      {%- elif ms == 'run' -%}{{ ([states.sensor.laundry_room_washer_machine_state.last_changed, states.sensor.laundry_room_washer_job_state.last_changed] | max).isoformat() }}
       {%- else -%}{{ states.sensor.laundry_room_washer_job_state.last_changed.isoformat() }}
       {%- endif -%}
       {%- endif -%}
@@ -23,7 +23,11 @@ template:
       {%- set end = states('sensor.laundry_room_washer_completion_time') | as_datetime(none) -%}
       {%- set running = ms in ['run', 'pause'] and end is not none -%}
       {%- set m = ((end - (states.sensor.laundry_room_washer_machine_state.last_changed if ms == 'pause' else now())).total_seconds() / 60) | round(0, 'ceil') | int if running else 0 -%}
-      {%- if running and m >= 60 -%}{{ m // 60 }}{%- endif -%}
+      {%- set delay = states('sensor.laundry_room_washer_job_state') == 'delay_wash' -%}
+      {%- set at = as_local(end + timedelta(seconds=30)) if running else none -%}
+      {%- if running and delay -%}
+      {{ 'next day ' if at.date() > now().date() else '' }}{{ at.hour % 12 or 12 }} {{ 'am' if at.hour < 12 else 'pm' }}
+      {%- elif running and m >= 60 -%}{{ m // 60 }}{%- endif -%}
   - name: Samsung washer display minutes
     unique_id: samsung_washer_display_minutes
     icon: mdi:monitor
@@ -32,7 +36,10 @@ template:
       {%- set end = states('sensor.laundry_room_washer_completion_time') | as_datetime(none) -%}
       {%- set running = ms in ['run', 'pause'] and end is not none -%}
       {%- set m = ((end - (states.sensor.laundry_room_washer_machine_state.last_changed if ms == 'pause' else now())).total_seconds() / 60) | round(0, 'ceil') | int if running else 0 -%}
-      {%- if running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}
+      {%- set delay = states('sensor.laundry_room_washer_job_state') == 'delay_wash' -%}
+      {%- set at = as_local(end + timedelta(seconds=30)) if running else none -%}
+      {%- if running and delay -%}{{ ':%02d' | format(at.minute) }}
+      {%- elif running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}
   - name: Samsung washer display progress
     unique_id: samsung_washer_display_progress
     icon: mdi:monitor
@@ -51,9 +58,9 @@ template:
       {%- set ms = states('sensor.laundry_room_dryer_machine_state') -%}
       {%- set prev = this.state if this is defined and this.state is defined and this.state not in ['unknown', 'unavailable', ''] else '' -%}
       {%- if ms in ['unknown', 'unavailable'] -%}{{ prev }}
-      {%- elif ms in ['run', 'pause'] -%}
+      {%- elif ms in ['run', 'pause'] and states('sensor.laundry_room_dryer_job_state') != 'delay_wash' -%}
       {%- if prev -%}{{ prev }}
-      {%- elif ms == 'run' -%}{{ states.sensor.laundry_room_dryer_machine_state.last_changed.isoformat() }}
+      {%- elif ms == 'run' -%}{{ ([states.sensor.laundry_room_dryer_machine_state.last_changed, states.sensor.laundry_room_dryer_job_state.last_changed] | max).isoformat() }}
       {%- else -%}{{ states.sensor.laundry_room_dryer_job_state.last_changed.isoformat() }}
       {%- endif -%}
       {%- endif -%}
@@ -65,7 +72,11 @@ template:
       {%- set end = states('sensor.laundry_room_dryer_completion_time') | as_datetime(none) -%}
       {%- set running = ms in ['run', 'pause'] and end is not none -%}
       {%- set m = ((end - (states.sensor.laundry_room_dryer_machine_state.last_changed if ms == 'pause' else now())).total_seconds() / 60) | round(0, 'ceil') | int if running else 0 -%}
-      {%- if running and m >= 60 -%}{{ m // 60 }}{%- endif -%}
+      {%- set delay = states('sensor.laundry_room_dryer_job_state') == 'delay_wash' -%}
+      {%- set at = as_local(end + timedelta(seconds=30)) if running else none -%}
+      {%- if running and delay -%}
+      {{ 'next day ' if at.date() > now().date() else '' }}{{ at.hour % 12 or 12 }} {{ 'am' if at.hour < 12 else 'pm' }}
+      {%- elif running and m >= 60 -%}{{ m // 60 }}{%- endif -%}
   - name: Samsung dryer display minutes
     unique_id: samsung_dryer_display_minutes
     icon: mdi:monitor
@@ -74,7 +85,10 @@ template:
       {%- set end = states('sensor.laundry_room_dryer_completion_time') | as_datetime(none) -%}
       {%- set running = ms in ['run', 'pause'] and end is not none -%}
       {%- set m = ((end - (states.sensor.laundry_room_dryer_machine_state.last_changed if ms == 'pause' else now())).total_seconds() / 60) | round(0, 'ceil') | int if running else 0 -%}
-      {%- if running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}
+      {%- set delay = states('sensor.laundry_room_dryer_job_state') == 'delay_wash' -%}
+      {%- set at = as_local(end + timedelta(seconds=30)) if running else none -%}
+      {%- if running and delay -%}{{ ':%02d' | format(at.minute) }}
+      {%- elif running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}
   - name: Samsung dryer display progress
     unique_id: samsung_dryer_display_progress
     icon: mdi:monitor
