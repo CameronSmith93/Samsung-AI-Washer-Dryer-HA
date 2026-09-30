@@ -44,16 +44,17 @@ WW, WH = SX1 - SX0, SY1 - SY0
 DX0, DY0, DX1, DY1 = 552, 138, 898, 241        # display window; button icons sit below it on the glass
 TX0, TX1 = 562, 692                            # text zone (stage, time, progress bar)
 STAGE_Y, TIME_Y, BAR_Y = 184, 222, 234
-DH = 28                                        # 7-segment digit height
-_W, _G = DH * 0.56, DH * 0.16                  # digit width and gap (see seg_text)
-_X0 = 703                                      # left edge of the '88' group
-TEMP_X = _X0 + (2 * _W + _G) / 2                                   # '88'   (temperature / dry level)
-RINSE_X = _X0 + 2 * _W + _G + 10 + _W / 2                          # '8'    (rinse count / Wrinkle Prevent)
-SPIN_X = _X0 + 2 * _W + _G + 10 + _W + 6 + (4 * _W + 3 * _G) / 2   # '1888' (spin speed)
+DH = 22                                        # 7-segment digit height
+_W, _G, _T = DH * 0.56, DH * 0.16, DH * 0.105  # digit width, gap and segment thickness (see seg_digit)
 # status block to the right of the digits, as in the manuals: Wi-Fi | Smart Control over door lock | child lock
-STAT_L, STAT_R = SPIN_X + (4 * _W + 3 * _G) / 2 + 18, SPIN_X + (4 * _W + 3 * _G) / 2 + 37
+STAT_L, STAT_R = 865, 884
 STAT_TOP, STAT_BOT = 184.5, 200.5
-HAND_X = STAT_L + 8
+# '88' (temperature / dry level), '8' (rinse count / Wrinkle Prevent) and '1888' (spin speed, its 1 in a narrow
+# cell) sit centred over their symbols, which are evenly spaced as on the real panel, the Smart Control hand included
+TEMP_X = TX1 + 12 + (2 * _W + _G) / 2
+SPIN_X = STAT_L - 9 - 8 - (_T + 3 * _W + 3 * _G) / 2     # ends 8 px short of the Wi-Fi symbol
+STEP = (SPIN_X - TEMP_X) / 2
+RINSE_X, HAND_X = TEMP_X + STEP, SPIN_X + STEP
 IY = 256                                       # button icon row (below the display window)
 OVERLAY_STYLE = {'left': f'{(SX0 + SX1) / 2 / W * 100:.3f}%', 'top': f'{(SY0 + SY1) / 2 / H * 100:.3f}%',
                  'width': f'{WW / W * 100:.3f}%', 'pointer-events': 'none'}
@@ -192,8 +193,8 @@ SEG = {'0': 'abcdef', '1': 'bc', '2': 'abged', '3': 'abgcd', '4': 'fgbc', '5': '
        '8': 'abcdefg', '9': 'abfgcd', '-': 'g', ' ': '', 'C': 'afed', 'o': 'cdeg'}
 
 
-def seg_digit(d, ch, x0, cy, h, col):
-    w = h * 0.56; t = h * 0.105; g = t * 0.28
+def seg_digit(d, ch, x0, cy, h, col, w):
+    t = h * 0.105; g = t * 0.28
     top, mid, bot = cy - h / 2, cy, cy + h / 2
     def hseg(y):
         xa, xb = x0 + g, x0 + w - g
@@ -209,11 +210,13 @@ def seg_digit(d, ch, x0, cy, h, col):
         d.polygon(segs[s], fill=col)
 
 
-def seg_text(img, text, cx, cy, h=DH, col=LIT):
-    d = KD(img); w = h * 0.56; gap = h * 0.16
-    x = cx - (w * len(text) + gap * (len(text) - 1)) / 2
-    for c in text:
-        seg_digit(d, c, x, cy, h, col); x += w + gap
+def seg_text(img, text, cx, cy, h=DH, col=LIT, narrow_first=False):
+    """Centred on cx. narrow_first: the first cell only holds a 1 (the spin speed's '1888'), so it's one segment wide."""
+    d = KD(img); gap = h * 0.16
+    ws = [h * 0.105 if narrow_first and i == 0 else h * 0.56 for i in range(len(text))]
+    x = cx - (sum(ws) + gap * (len(text) - 1)) / 2
+    for c, w in zip(text, ws):
+        seg_digit(d, c, x, cy, h, col, w); x += w + gap
 
 
 def next_day(d, right):
@@ -302,6 +305,7 @@ def build_images(out, raw, washer_photo, dryer_photo):
     for k, (l, a) in WASHER_STAGES.items(): stage(k, l, a, 'washer')
     for k, (l, a) in DRYER_STAGES.items(): stage(k, l, a, 'dryer')
     for p in ('washer', 'dryer'): stage('paused', 'Paused', 0, p)
+    stage('bubble_soak', 'Bubble Soak', 1, 'washer')          # shown instead of Washing while Bubble Soak is on
     d0 = KD(ov()); wmin = d0.textlength('00', font=font(30)) + 2 + d0.textlength('min', font=font(14))
     for mm in range(60):
         save(glow(text_img([(f'{mm:02d}', 30), ('min', 14)], TX1, TIME_Y, 'right')), f'time-m-{mm:02d}.png')
@@ -331,7 +335,7 @@ def build_images(out, raw, washer_photo, dryer_photo):
     # washer: faint '88 8 1888' cells + button icons, then the lit digits
     o = ov()
     for txt, x in (('88', TEMP_X), ('8', RINSE_X), ('1888', SPIN_X)):
-        seg_text(o, txt, *L(x, 192), col=GHOST)
+        seg_text(o, txt, *L(x, 192), col=GHOST, narrow_first=x == SPIN_X)
     lit = ov()
     put(lit, I['temp'], TEMP_X, IY - 1); put(lit, I['rinse'], RINSE_X, IY); put(lit, I['spin'], SPIN_X, IY); put(lit, I['hand'], HAND_X, IY)
     o.alpha_composite(glow(lit)); save(o, 'washer-base.png')
@@ -340,13 +344,13 @@ def build_images(out, raw, washer_photo, dryer_photo):
     for n in range(6):
         o = ov(); seg_text(o, str(n), *L(RINSE_X, 192)); save(glow(o), f'washer-rinse-{n}.png')
     for k, v in WASHER_SPINS.items():
-        o = ov(); seg_text(o, v, *L(SPIN_X, 192)); save(glow(o), f'washer-spin-{k}.png')
+        o = ov(); seg_text(o, v, *L(SPIN_X, 192), narrow_first=True); save(glow(o), f'washer-spin-{k}.png')
     o = ov(); put(o, I['doorlock'], STAT_L, STAT_BOT); save(glow(o), 'washer-doorlock.png')
 
     # dryer: same cells; the dry-level icon is separate because it only lights on cycles that have a dry level
     o = ov()
     for txt, x in (('88', TEMP_X), ('8', RINSE_X), ('1888', SPIN_X)):
-        seg_text(o, txt, *L(x, 192), col=GHOST)
+        seg_text(o, txt, *L(x, 192), col=GHOST, narrow_first=x == SPIN_X)
     lit = ov(); put(lit, I['wrinkle'], RINSE_X, IY - 2); put(lit, I['hand'], HAND_X, IY)
     o.alpha_composite(glow(lit)); save(o, 'dryer-base.png')
     o = ov(); put(o, I['level'], TEMP_X, IY - 1); save(glow(o), 'dryer-level.png')
@@ -392,23 +396,23 @@ def time_and_bar(www, disp):
 
 def washer_card(www, e, disp):
     p, ms, js = f'binary_sensor.{e}_power', f'sensor.{e}_machine_state', f'sensor.{e}_job_state'
+    soak = f'switch.{e}_bubble_soak'
     temp = mapped(www, f'select.{e}_water_temperature', {k: f'washer-temp-{k}.png' for k in WASHER_TEMPS})
     rinse = mapped(www, f'number.{e}_rinse_cycles', {**{str(n): f'washer-rinse-{n}.png' for n in range(6)},
                                                      **{f'{n}.0': f'washer-rinse-{n}.png' for n in range(6)}})
     spin = mapped(www, f'select.{e}_spin_level', {k: f'washer-spin-{k}.png' for k in WASHER_SPINS})
+    stages = {k: f'washer-stage-{k}.png' for k in WASHER_STAGES}
     els = [
         cond([is_(p, 'on')], img(f'{www}/washer-base.png')),
         cond([is_(p, 'on'), not_(ms, 'stop')], *time_and_bar(www, disp)),
-        cond([is_(p, 'on'), is_(ms, 'run')], mapped(www, js, {k: f'washer-stage-{k}.png' for k in WASHER_STAGES})),
+        cond([is_(p, 'on'), is_(ms, 'run'), not_(soak, 'on')], mapped(www, js, stages)),
+        # with Bubble Soak on, the display shows Bubble Soak for the whole wash phase
+        cond([is_(p, 'on'), is_(ms, 'run'), is_(soak, 'on')],
+             mapped(www, js, {**stages, 'wash': 'washer-stage-bubble_soak.png', 'ai_wash': 'washer-stage-bubble_soak.png'})),
         cond([is_(p, 'on'), is_(ms, 'pause')], img(f'{www}/washer-stage-paused.png')),
         cond([is_(p, 'on'), is_(ms, 'run')], img(f'{www}/washer-doorlock.png')),
-        # idle: all three settings; running: only the one that belongs to the current phase
-        cond([is_(p, 'on'), is_(ms, 'stop')], temp, rinse, spin),
-    ]
-    for phase, el in (('wash', temp), ('pre_wash', temp), ('ai_wash', temp), ('air_wash', temp),
-                      ('rinse', rinse), ('ai_rinse', rinse), ('spin', spin), ('ai_spin', spin)):
-        els.append(cond([not_(ms, 'stop'), is_(js, phase)], el))
-    els += status(www, e)
+        cond([is_(p, 'on')], temp, rinse, spin),          # the settings stay lit, idle or running
+    ] + status(www, e)
     return {'type': 'picture-elements', 'image': f'{www}/washer-bg.png', 'elements': els, 'grid_options': {'columns': 12}}
 
 

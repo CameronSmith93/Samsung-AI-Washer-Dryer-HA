@@ -268,6 +268,8 @@ elements:
     state: 'on'
   - entity: sensor.laundry_room_washer_machine_state
     state: run
+  - entity: switch.laundry_room_washer_bubble_soak
+    state_not: 'on'
   elements:
   - type: image
     image: /local/samsung-laundry/blank.png
@@ -287,6 +289,43 @@ elements:
       spin: /local/samsung-laundry/washer-stage-spin.png
       pre_wash: /local/samsung-laundry/washer-stage-pre_wash.png
       ai_wash: /local/samsung-laundry/washer-stage-ai_wash.png
+      ai_rinse: /local/samsung-laundry/washer-stage-ai_rinse.png
+      ai_spin: /local/samsung-laundry/washer-stage-ai_spin.png
+      air_wash: /local/samsung-laundry/washer-stage-air_wash.png
+      weight_sensing: /local/samsung-laundry/washer-stage-weight_sensing.png
+      delay_wash: /local/samsung-laundry/washer-stage-delay_wash.png
+      drying: /local/samsung-laundry/washer-stage-drying.png
+      cooling: /local/samsung-laundry/washer-stage-cooling.png
+      wrinkle_prevent: /local/samsung-laundry/washer-stage-wrinkle_prevent.png
+      finish: /local/samsung-laundry/washer-stage-finish.png
+      freeze_protection: /local/samsung-laundry/washer-stage-freeze_protection.png
+- type: conditional
+  conditions:
+  - entity: binary_sensor.laundry_room_washer_power
+    state: 'on'
+  - entity: sensor.laundry_room_washer_machine_state
+    state: run
+  - entity: switch.laundry_room_washer_bubble_soak
+    state: 'on'
+  elements:
+  - type: image
+    image: /local/samsung-laundry/blank.png
+    tap_action:
+      action: none
+    hold_action:
+      action: none
+    style:
+      left: 69.583%
+      top: 50.000%
+      width: 55.833%
+      pointer-events: none
+    entity: sensor.laundry_room_washer_job_state
+    state_image:
+      wash: /local/samsung-laundry/washer-stage-bubble_soak.png
+      rinse: /local/samsung-laundry/washer-stage-rinse.png
+      spin: /local/samsung-laundry/washer-stage-spin.png
+      pre_wash: /local/samsung-laundry/washer-stage-pre_wash.png
+      ai_wash: /local/samsung-laundry/washer-stage-bubble_soak.png
       ai_rinse: /local/samsung-laundry/washer-stage-ai_rinse.png
       ai_spin: /local/samsung-laundry/washer-stage-ai_spin.png
       air_wash: /local/samsung-laundry/washer-stage-air_wash.png
@@ -337,8 +376,6 @@ elements:
   conditions:
   - entity: binary_sensor.laundry_room_washer_power
     state: 'on'
-  - entity: sensor.laundry_room_washer_machine_state
-    state: stop
   elements:
   - type: image
     image: /local/samsung-laundry/blank.png
@@ -384,228 +421,6 @@ elements:
       '3.0': /local/samsung-laundry/washer-rinse-3.png
       '4.0': /local/samsung-laundry/washer-rinse-4.png
       '5.0': /local/samsung-laundry/washer-rinse-5.png
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: select.laundry_room_washer_spin_level
-    state_image:
-      rinse_hold: /local/samsung-laundry/washer-spin-rinse_hold.png
-      no_spin: /local/samsung-laundry/washer-spin-no_spin.png
-      '400': /local/samsung-laundry/washer-spin-400.png
-      '800': /local/samsung-laundry/washer-spin-800.png
-      '1000': /local/samsung-laundry/washer-spin-1000.png
-      '1200': /local/samsung-laundry/washer-spin-1200.png
-      '1400': /local/samsung-laundry/washer-spin-1400.png
-- type: conditional
-  conditions:
-  - entity: sensor.laundry_room_washer_machine_state
-    state_not: stop
-  - entity: sensor.laundry_room_washer_job_state
-    state: wash
-  elements:
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: select.laundry_room_washer_water_temperature
-    state_image:
-      cold: /local/samsung-laundry/washer-temp-cold.png
-      '20': /local/samsung-laundry/washer-temp-20.png
-      '30': /local/samsung-laundry/washer-temp-30.png
-      '40': /local/samsung-laundry/washer-temp-40.png
-      '60': /local/samsung-laundry/washer-temp-60.png
-      '90': /local/samsung-laundry/washer-temp-90.png
-- type: conditional
-  conditions:
-  - entity: sensor.laundry_room_washer_machine_state
-    state_not: stop
-  - entity: sensor.laundry_room_washer_job_state
-    state: pre_wash
-  elements:
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: select.laundry_room_washer_water_temperature
-    state_image:
-      cold: /local/samsung-laundry/washer-temp-cold.png
-      '20': /local/samsung-laundry/washer-temp-20.png
-      '30': /local/samsung-laundry/washer-temp-30.png
-      '40': /local/samsung-laundry/washer-temp-40.png
-      '60': /local/samsung-laundry/washer-temp-60.png
-      '90': /local/samsung-laundry/washer-temp-90.png
-- type: conditional
-  conditions:
-  - entity: sensor.laundry_room_washer_machine_state
-    state_not: stop
-  - entity: sensor.laundry_room_washer_job_state
-    state: ai_wash
-  elements:
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: select.laundry_room_washer_water_temperature
-    state_image:
-      cold: /local/samsung-laundry/washer-temp-cold.png
-      '20': /local/samsung-laundry/washer-temp-20.png
-      '30': /local/samsung-laundry/washer-temp-30.png
-      '40': /local/samsung-laundry/washer-temp-40.png
-      '60': /local/samsung-laundry/washer-temp-60.png
-      '90': /local/samsung-laundry/washer-temp-90.png
-- type: conditional
-  conditions:
-  - entity: sensor.laundry_room_washer_machine_state
-    state_not: stop
-  - entity: sensor.laundry_room_washer_job_state
-    state: air_wash
-  elements:
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: select.laundry_room_washer_water_temperature
-    state_image:
-      cold: /local/samsung-laundry/washer-temp-cold.png
-      '20': /local/samsung-laundry/washer-temp-20.png
-      '30': /local/samsung-laundry/washer-temp-30.png
-      '40': /local/samsung-laundry/washer-temp-40.png
-      '60': /local/samsung-laundry/washer-temp-60.png
-      '90': /local/samsung-laundry/washer-temp-90.png
-- type: conditional
-  conditions:
-  - entity: sensor.laundry_room_washer_machine_state
-    state_not: stop
-  - entity: sensor.laundry_room_washer_job_state
-    state: rinse
-  elements:
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: number.laundry_room_washer_rinse_cycles
-    state_image:
-      '0': /local/samsung-laundry/washer-rinse-0.png
-      '1': /local/samsung-laundry/washer-rinse-1.png
-      '2': /local/samsung-laundry/washer-rinse-2.png
-      '3': /local/samsung-laundry/washer-rinse-3.png
-      '4': /local/samsung-laundry/washer-rinse-4.png
-      '5': /local/samsung-laundry/washer-rinse-5.png
-      '0.0': /local/samsung-laundry/washer-rinse-0.png
-      '1.0': /local/samsung-laundry/washer-rinse-1.png
-      '2.0': /local/samsung-laundry/washer-rinse-2.png
-      '3.0': /local/samsung-laundry/washer-rinse-3.png
-      '4.0': /local/samsung-laundry/washer-rinse-4.png
-      '5.0': /local/samsung-laundry/washer-rinse-5.png
-- type: conditional
-  conditions:
-  - entity: sensor.laundry_room_washer_machine_state
-    state_not: stop
-  - entity: sensor.laundry_room_washer_job_state
-    state: ai_rinse
-  elements:
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: number.laundry_room_washer_rinse_cycles
-    state_image:
-      '0': /local/samsung-laundry/washer-rinse-0.png
-      '1': /local/samsung-laundry/washer-rinse-1.png
-      '2': /local/samsung-laundry/washer-rinse-2.png
-      '3': /local/samsung-laundry/washer-rinse-3.png
-      '4': /local/samsung-laundry/washer-rinse-4.png
-      '5': /local/samsung-laundry/washer-rinse-5.png
-      '0.0': /local/samsung-laundry/washer-rinse-0.png
-      '1.0': /local/samsung-laundry/washer-rinse-1.png
-      '2.0': /local/samsung-laundry/washer-rinse-2.png
-      '3.0': /local/samsung-laundry/washer-rinse-3.png
-      '4.0': /local/samsung-laundry/washer-rinse-4.png
-      '5.0': /local/samsung-laundry/washer-rinse-5.png
-- type: conditional
-  conditions:
-  - entity: sensor.laundry_room_washer_machine_state
-    state_not: stop
-  - entity: sensor.laundry_room_washer_job_state
-    state: spin
-  elements:
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: select.laundry_room_washer_spin_level
-    state_image:
-      rinse_hold: /local/samsung-laundry/washer-spin-rinse_hold.png
-      no_spin: /local/samsung-laundry/washer-spin-no_spin.png
-      '400': /local/samsung-laundry/washer-spin-400.png
-      '800': /local/samsung-laundry/washer-spin-800.png
-      '1000': /local/samsung-laundry/washer-spin-1000.png
-      '1200': /local/samsung-laundry/washer-spin-1200.png
-      '1400': /local/samsung-laundry/washer-spin-1400.png
-- type: conditional
-  conditions:
-  - entity: sensor.laundry_room_washer_machine_state
-    state_not: stop
-  - entity: sensor.laundry_room_washer_job_state
-    state: ai_spin
-  elements:
   - type: image
     image: /local/samsung-laundry/blank.png
     tap_action:
