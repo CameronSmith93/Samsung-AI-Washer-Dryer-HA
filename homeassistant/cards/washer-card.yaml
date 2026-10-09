@@ -268,8 +268,6 @@ elements:
     state: 'on'
   - entity: sensor.laundry_room_washer_machine_state
     state: run
-  - entity: switch.laundry_room_washer_bubble_soak
-    state_not: 'on'
   elements:
   - type: image
     image: /local/samsung-laundry/blank.png
@@ -282,7 +280,7 @@ elements:
       top: 50.000%
       width: 55.833%
       pointer-events: none
-    entity: sensor.laundry_room_washer_job_state
+    entity: sensor.samsung_washer_display_stage
     state_image:
       wash: /local/samsung-laundry/washer-stage-wash.png
       rinse: /local/samsung-laundry/washer-stage-rinse.png
@@ -299,43 +297,7 @@ elements:
       wrinkle_prevent: /local/samsung-laundry/washer-stage-wrinkle_prevent.png
       finish: /local/samsung-laundry/washer-stage-finish.png
       freeze_protection: /local/samsung-laundry/washer-stage-freeze_protection.png
-- type: conditional
-  conditions:
-  - entity: binary_sensor.laundry_room_washer_power
-    state: 'on'
-  - entity: sensor.laundry_room_washer_machine_state
-    state: run
-  - entity: switch.laundry_room_washer_bubble_soak
-    state: 'on'
-  elements:
-  - type: image
-    image: /local/samsung-laundry/blank.png
-    tap_action:
-      action: none
-    hold_action:
-      action: none
-    style:
-      left: 69.583%
-      top: 50.000%
-      width: 55.833%
-      pointer-events: none
-    entity: sensor.laundry_room_washer_job_state
-    state_image:
-      wash: /local/samsung-laundry/washer-stage-bubble_soak.png
-      rinse: /local/samsung-laundry/washer-stage-rinse.png
-      spin: /local/samsung-laundry/washer-stage-spin.png
-      pre_wash: /local/samsung-laundry/washer-stage-pre_wash.png
-      ai_wash: /local/samsung-laundry/washer-stage-bubble_soak.png
-      ai_rinse: /local/samsung-laundry/washer-stage-ai_rinse.png
-      ai_spin: /local/samsung-laundry/washer-stage-ai_spin.png
-      air_wash: /local/samsung-laundry/washer-stage-air_wash.png
-      weight_sensing: /local/samsung-laundry/washer-stage-weight_sensing.png
-      delay_wash: /local/samsung-laundry/washer-stage-delay_wash.png
-      drying: /local/samsung-laundry/washer-stage-drying.png
-      cooling: /local/samsung-laundry/washer-stage-cooling.png
-      wrinkle_prevent: /local/samsung-laundry/washer-stage-wrinkle_prevent.png
-      finish: /local/samsung-laundry/washer-stage-finish.png
-      freeze_protection: /local/samsung-laundry/washer-stage-freeze_protection.png
+      bubble_soak: /local/samsung-laundry/washer-stage-bubble_soak.png
 - type: conditional
   conditions:
   - entity: binary_sensor.laundry_room_washer_power

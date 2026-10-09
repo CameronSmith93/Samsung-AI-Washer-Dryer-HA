@@ -51,6 +51,15 @@ template:
       {%- if ms in ['run', 'pause'] and end is not none and start is not none and end > start -%}
       {{ [[((t - start).total_seconds() / (end - start).total_seconds() * 20) | round(0) | int, 0] | max, 20] | min }}
       {%- else -%}0{%- endif -%}
+  - name: Samsung washer display stage
+    unique_id: samsung_washer_display_stage
+    icon: mdi:monitor
+    state: |-
+      {%- set js = states('sensor.laundry_room_washer_job_state') -%}
+      {%- set end = states('sensor.laundry_room_washer_completion_time') | as_datetime(none) -%}
+      {%- set left = (end - now()).total_seconds() / 60 if end is not none else -1 -%}
+      {%- if js in ['wash', 'ai_wash'] and is_state('switch.laundry_room_washer_bubble_soak', 'on') and 52 <= left < 82 -%}bubble_soak
+      {%- else -%}{{ js }}{%- endif -%}
   - name: Samsung dryer display cycle start
     unique_id: samsung_dryer_display_cycle_start
     icon: mdi:timer-play-outline

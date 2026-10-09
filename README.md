@@ -21,8 +21,8 @@ through the cycle.
 
 ![Washer card mid-spin](docs/washer-running.png)
 
-**Washer, Bubble Soak.** With Bubble Soak on, the wash phase shows as Bubble Soak, as on the real
-display.
+**Washer, Bubble Soak.** With Bubble Soak on, the start of the wash phase shows as Bubble Soak, as on
+the real display.
 
 ![Washer card with Bubble Soak](docs/washer-bubble-soak.png)
 
@@ -54,7 +54,7 @@ They're in [`assets/icons/`](assets/icons/), with the manual and page each one c
 
 | On the card | Comes from |
 |---|---|
-| Stage line (`Washing ›››`, `Bubble Soak ›››`, `Drying ›››`, `Paused`) | machine state and job state; the washer's Bubble Soak switch turns its wash phase into Bubble Soak |
+| Stage line (`Washing ›››`, `Bubble Soak ›››`, `Drying ›››`, `Paused`) | machine state and job state; with the washer's Bubble Soak switch on, 30 minutes of the wash phase show as Bubble Soak, ending 52 minutes before the end |
 | Time left and progress bar | the completion time, frozen while paused. After Delay End, the bar starts when the cycle does |
 | Finish time during Delay End (`NEXT DAY 5:59 AM`) | the completion time, to the nearest minute |
 | Washer temperature / rinse count / spin speed digits | the water temperature, rinse cycles and spin level entities, shown whenever the washer is on, as on the real panel |
@@ -74,6 +74,10 @@ They're in [`assets/icons/`](assets/icons/), with the manual and page each one c
 - **Time left and progress** are worked out from the completion time Home Assistant receives. The
   dryer can add a few minutes during a cycle before SmartThings updates the completion time.
 - A Home Assistant restart in the middle of a cycle restarts the progress bar from that point.
+- **Bubble Soak is timed.** The display shows Washing, then Bubble Soak for the 30 minutes the option
+  adds, then Washing again, but SmartThings reports all of it as the wash phase. The card places the
+  soak by the time left, ending 52 minutes before the end (`BUBBLE_SOAK_ENDS_LEFT` in
+  `generator/build.py`). That matches Cotton with 2 rinses at 1400 rpm; other cycles may differ.
 - Temperature and spin values are the ones these machines use (`cold`, 20–90 °C, 400–1400 rpm,
   rinse hold, no spin). If your model reports other values, add them to `WASHER_TEMPS` /
   `WASHER_SPINS` in `generator/build.py` and build your own set (see below).
@@ -121,7 +125,8 @@ homeassistant:
 ```
 
 Copy `homeassistant/packages/samsung_laundry_package.yaml` to `/config/packages/`, then restart
-Home Assistant. This adds the sensors that drive the time, progress bar and cycle start.
+Home Assistant. This adds the sensors that drive the time, progress bar, cycle start and the washer's
+stage line.
 
 **4. Add the cards**
 

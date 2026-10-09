@@ -70,6 +70,10 @@ DRYER_STAGES = {'drying': ('Drying', 1), 'ai_drying': ('Drying', 1), 'cooling': 
                 'continuous_dehumidifying': ('Dehumidifying', 1), 'sanitizing': ('Sanitising', 1),
                 'internal_care': ('Internal Care', 1), 'freeze_protection': ('Freeze Protect', 1),
                 'thawing_frozen_inside': ('Thawing', 1)}
+# With Bubble Soak on, the wash phase shows Washing, then Bubble Soak for the 30 minutes the option adds, then
+# Washing again. SmartThings reports it all as wash, so the soak is placed by the time left: it ends with about
+# 52 minutes to go (Cotton, 2 rinses, 1400 rpm: soaking with 59 left, washing again with 44 left)
+BUBBLE_SOAK_MIN, BUBBLE_SOAK_ENDS_LEFT = 30, 52
 WASHER_TEMPS = {'cold': 'Co', '20': '20', '30': '30', '40': '40', '60': '60', '90': '90'}
 WASHER_SPINS = {'rinse_hold': '  --', 'no_spin': '   0', '400': ' 400', '800': ' 800',
                 '1000': '1000', '1200': '1200', '1400': '1400'}
@@ -395,20 +399,16 @@ def time_and_bar(www, disp):
 
 
 def washer_card(www, e, disp):
-    p, ms, js = f'binary_sensor.{e}_power', f'sensor.{e}_machine_state', f'sensor.{e}_job_state'
-    soak = f'switch.{e}_bubble_soak'
-    temp = mapped(www, f'select.{e}_water_temperature', {k: f'washer-temp-{k}.png' for k in WASHER_TEMPS})
+    p, ms = f'binary_sensor.{e}_power', f'sensor.{e}_machine_state'
+    temp =mapped(www, f'select.{e}_water_temperature', {k: f'washer-temp-{k}.png' for k in WASHER_TEMPS})
     rinse = mapped(www, f'number.{e}_rinse_cycles', {**{str(n): f'washer-rinse-{n}.png' for n in range(6)},
                                                      **{f'{n}.0': f'washer-rinse-{n}.png' for n in range(6)}})
     spin = mapped(www, f'select.{e}_spin_level', {k: f'washer-spin-{k}.png' for k in WASHER_SPINS})
-    stages = {k: f'washer-stage-{k}.png' for k in WASHER_STAGES}
+    stages = {**{k: f'washer-stage-{k}.png' for k in WASHER_STAGES}, 'bubble_soak': 'washer-stage-bubble_soak.png'}
     els = [
         cond([is_(p, 'on')], img(f'{www}/washer-base.png')),
         cond([is_(p, 'on'), not_(ms, 'stop')], *time_and_bar(www, disp)),
-        cond([is_(p, 'on'), is_(ms, 'run'), not_(soak, 'on')], mapped(www, js, stages)),
-        # with Bubble Soak on, the display shows Bubble Soak for the whole wash phase
-        cond([is_(p, 'on'), is_(ms, 'run'), is_(soak, 'on')],
-             mapped(www, js, {**stages, 'wash': 'washer-stage-bubble_soak.png', 'ai_wash': 'washer-stage-bubble_soak.png'})),
+        cond([is_(p, 'on'), is_(ms, 'run')], mapped(www, f'sensor.{disp}_stage', stages)),   # job state, or bubble_soak
         cond([is_(p, 'on'), is_(ms, 'pause')], img(f'{www}/washer-stage-paused.png')),
         cond([is_(p, 'on'), is_(ms, 'run')], img(f'{www}/washer-doorlock.png')),
         cond([is_(p, 'on')], temp, rinse, spin),          # the settings stay lit, idle or running
@@ -437,9 +437,9 @@ def status(www, e):
 
 
 def package(machines):
-    """Template sensors the cards read. `machines`: [(label, smartthings_prefix, display_prefix)]"""
+    """Template sensors the cards read. `machines`: [(label, smartthings_prefix, display_prefix, has_bubble_soak)]"""
     sensors = []
-    for label, e, disp in machines:
+    for label, e, disp, soak in machines:
         ms, end = f"states('sensor.{e}_machine_state')", f"states('sensor.{e}_completion_time') | as_datetime(none)"
         paused_at = f"states.sensor.{e}_machine_state.last_changed if ms == 'pause' else now()"
         remaining = (f"{{%- set ms = {ms} -%}}\n{{%- set end = {end} -%}}\n"
@@ -475,6 +475,15 @@ def package(machines):
                        "{{ [[((t - start).total_seconds() / (end - start).total_seconds() * 20) | round(0) | int, 0] | max, 20] | min }}\n"
                        "{%- else -%}0{%- endif -%}")},
         ]
+        if soak:
+            sensors.append(
+                {'name': f'{label} stage', 'unique_id': f'{disp}_stage', 'icon': 'mdi:monitor',
+                 'state': (f"{{%- set js = states('sensor.{e}_job_state') -%}}\n"
+                           f"{{%- set end = {end} -%}}\n"
+                           "{%- set left = (end - now()).total_seconds() / 60 if end is not none else -1 -%}\n"
+                           f"{{%- if js in ['wash', 'ai_wash'] and is_state('switch.{e}_bubble_soak', 'on') and "
+                           f"{BUBBLE_SOAK_ENDS_LEFT} <= left < {BUBBLE_SOAK_ENDS_LEFT + BUBBLE_SOAK_MIN} -%}}bubble_soak\n"
+                           "{%- else -%}{{ js }}{%- endif -%}")})
     return {'template': [{'sensor': sensors}]}
 
 
@@ -499,7 +508,7 @@ def dump(obj, path, header):
 def write_yaml(out, www, we, de):
     wd, dd = 'samsung_washer_display', 'samsung_dryer_display'
     (out / 'packages').mkdir(parents=True, exist_ok=True); (out / 'cards').mkdir(parents=True, exist_ok=True)
-    dump(package([('Samsung washer display', we, wd), ('Samsung dryer display', de, dd)]),
+    dump(package([('Samsung washer display', we, wd, True), ('Samsung dryer display', de, dd, False)]),
          out / 'packages' / 'samsung_laundry_package.yaml',
          '# Home Assistant package: template sensors used by the washer and dryer cards.\n'
          '# Put this file in /config/packages/ (see README) and restart Home Assistant.\n')
