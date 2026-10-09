@@ -42,8 +42,8 @@ DEVICE_CX, DEVICE_H, DEVICE_BOTTOM = 190, 257, 326
 SX0, SY0, SX1, SY1 = 400, 125, 936, 275        # control strip = overlay canvas
 WW, WH = SX1 - SX0, SY1 - SY0
 DX0, DY0, DX1, DY1 = 552, 138, 898, 241        # display window; button icons sit below it on the glass
-TX0, TX1 = 562, 692                            # text zone (stage, time, progress bar)
-STAGE_Y, TIME_Y, BAR_Y = 184, 222, 234
+TX0, TX1 = 562, 692                            # text zone (cycle, stage, time, progress bar)
+CYCLE_Y, STAGE_Y, TIME_Y, BAR_Y = 163, 184, 222, 234
 DH = 22                                        # 7-segment digit height
 _W, _G, _T = DH * 0.56, DH * 0.16, DH * 0.105  # digit width, gap and segment thickness (see seg_digit)
 # status block to the right of the digits, as in the manuals: Wi-Fi | Smart Control over door lock | child lock
@@ -64,6 +64,7 @@ WASHER_STAGES = {'wash': ('Washing', 1), 'rinse': ('Rinsing', 1), 'spin': ('Spin
                  'weight_sensing': ('Sensing load', 1), 'delay_wash': ('Delay End', 0), 'drying': ('Drying', 1),
                  'cooling': ('Cooling', 1), 'wrinkle_prevent': ('Wrinkle Prevent', 1), 'finish': ('End', 0),
                  'freeze_protection': ('Freeze Protect', 1)}
+WASHER_STAGES_LT = {'steaming': ('Steaming', 1), 'sanitizing': ('Sanitising', 1), 'predrain': ('Draining', 1)}   # LocalThings only
 DRYER_STAGES = {'drying': ('Drying', 1), 'ai_drying': ('Drying', 1), 'cooling': ('Cooling', 1),
                 'wrinkle_prevent': ('Wrinkle Prevent', 1), 'finished': ('End', 0), 'weight_sensing': ('Sensing load', 1),
                 'delay_wash': ('Delay End', 0), 'refreshing': ('Refreshing', 1), 'dehumidifying': ('Dehumidifying', 1),
@@ -77,6 +78,23 @@ BUBBLE_SOAK_MIN, BUBBLE_SOAK_ENDS_LEFT = 30, 52
 WASHER_TEMPS = {'cold': 'Co', '20': '20', '30': '30', '40': '40', '60': '60', '90': '90'}
 WASHER_SPINS = {'rinse_hold': '  --', 'no_spin': '   0', '400': ' 400', '800': ' 800',
                 '1000': '1000', '1200': '1200', '1400': '1400'}
+# Cycle names by course code, as the panels spell them. Only the LocalThings source reports the cycle (SmartThings
+# has it, but Home Assistant's SmartThings integration doesn't make an entity of it). Codes and names are from
+# LocalThings' course tables (github.com/mbillow/localthings, MIT): Table_03 for the dryer, Table_02 for the washer.
+# Other models use other tables; a code missing here just shows no name.
+DRYER_CYCLES = {'16': 'Cotton', '17': 'Super Speed', '18': 'Synthetics', '19': 'Delicates', '1a': 'Wool',
+                '1b': 'Bedding', '1c': 'Shirts', '1d': 'Towels', '1e': 'Outdoor', '20': 'Iron Dry', '22': 'Silent Dry',
+                '23': "Quick Dry 35'", '24': 'Cool Air', '25': 'Warm Air', '27': 'Time Dry', '29': 'AI Dry',
+                '2a': 'Hygiene Care+', '2b': 'Self Tub Dry', '4c': 'Air Refresh'}
+WASHER_CYCLES = {'1b': 'Cotton', '1d': 'Super Speed', '1e': "15' Quick Wash", '20': 'Hygiene Steam', '21': 'Colors',
+                 '22': 'Wool', '23': 'Outdoor', '24': 'Bedding', '25': 'Synthetics', '26': 'Delicates',
+                 '27': 'Rinse+Spin', '28': 'Drain/Spin', '29': 'Drum Clean+', '2b': 'AI Wash', '2d': 'Silent Wash',
+                 '2e': 'Baby Care', '2f': 'Activewear', '30': 'Cloudy Day', '32': 'Shirts', '33': 'Towels',
+                 '35': 'E Cotton', '66': 'Denim', '8f': 'Intense Cold', '96': 'Less Microfiber'}
+# The dryer's set time (Time Dry, Warm Air, Cool Air), in minutes, shown in the right-hand digits over the clock
+DRYER_TIMES = (20, 30, 40, 50, 60, 90, 120, 150, 180, 240)
+# The dryer's dry level (sensor cycles only), shown as a digit in the left-hand cells over the dry-level symbol
+DRY_LEVELS = {'damp': 1, 'less': 2, 'normal': 3, 'more': 4}
 # Delay End shows the finish time (NEXT DAY 5:59 AM) instead of the time left: the hours slot carries the
 # hour, AM/PM and NEXT DAY, the minutes slot ':59'. (hour, am/pm, next day) -> (sensor state, image)
 CLOCK = {(h, ap, nd): (f'{"next day " if nd else ""}{h} {ap}', f'clock-h-{h}-{ap}{"-next" if nd else ""}.png')
@@ -175,6 +193,18 @@ def wifi_icon():
                 d.ellipse((*P(ex - lw / 2, ey - lw / 2), *P(ex + lw / 2, ey + lw / 2)), fill=255)
         d.ellipse((*P(cx - 1.7, cy - 1.7), *P(cx + 1.7, cy + 1.7)), fill=255)
     return vector_icon(18, 14.2, draw)
+
+
+def clock_icon():
+    """The dryer's Time symbol: a clock face with its hands at three o'clock, as on the real panel."""
+    def draw(d, P, k):
+        c, r, lw = 9.0, 7.6, 1.6
+        d.ellipse((*P(c - r, c - r), *P(c + r, c + r)), outline=255, width=round(lw * k))
+        for x1, y1 in ((c, c - 4.6), (c + 3.6, c)):
+            d.line([P(c, c), P(x1, y1)], fill=255, width=round(lw * k))
+            d.ellipse((*P(x1 - lw / 2, y1 - lw / 2), *P(x1 + lw / 2, y1 + lw / 2)), fill=255)
+        d.ellipse((*P(c - lw / 2, c - lw / 2), *P(c + lw / 2, c + lw / 2)), fill=255)
+    return vector_icon(18, 18, draw)
 
 
 def rinse_icon():
@@ -294,7 +324,7 @@ def build_images(out, raw, washer_photo, dryer_photo):
         'sc_printed': manual_icon(raw, 'smart-control-button', target_h=25, stroke=1.4, rgb=PRINT_T),
         'level': manual_icon(raw, 'dry-level', target_w=22, stroke=1.8),
         'wrinkle': manual_icon(raw, 'wrinkle-prevent', target_h=19, stroke=1.8),
-        'rinse': rinse_icon(), 'wifi': wifi_icon(),
+        'rinse': rinse_icon(), 'wifi': wifi_icon(), 'clock': clock_icon(),
     }
     save(background(washer_photo, (10, 10, 11), I), 'washer-bg.png')
     save(background(dryer_photo, (19, 20, 22), I), 'dryer-bg.png')
@@ -306,10 +336,19 @@ def build_images(out, raw, washer_photo, dryer_photo):
         while size > 11 and d.textlength(txt, font=font(size)) > TX1 - TX0:
             size -= 1
         save(glow(text_img([(txt, size)], TX0, STAGE_Y)), f'{prefix}-stage-{key}.png')
-    for k, (l, a) in WASHER_STAGES.items(): stage(k, l, a, 'washer')
+    for k, (l, a) in {**WASHER_STAGES, **WASHER_STAGES_LT}.items(): stage(k, l, a, 'washer')
     for k, (l, a) in DRYER_STAGES.items(): stage(k, l, a, 'dryer')
     for p in ('washer', 'dryer'): stage('paused', 'Paused', 0, p)
     stage('bubble_soak', 'Bubble Soak', 1, 'washer')          # shown instead of Washing while Bubble Soak is on
+
+    # cycle name, on the line above the stage, in the same type
+    def cycle(code, label, prefix):
+        d = KD(ov()); size = 19
+        while size > 11 and d.textlength(label, font=font(size)) > TX1 - TX0:
+            size -= 1
+        save(glow(text_img([(label, size)], TX0, CYCLE_Y)), f'{prefix}-cycle-{code}.png')
+    for k, l in WASHER_CYCLES.items(): cycle(k, l, 'washer')
+    for k, l in DRYER_CYCLES.items(): cycle(k, l, 'dryer')
     d0 = KD(ov()); wmin = d0.textlength('00', font=font(30)) + 2 + d0.textlength('min', font=font(14))
     for mm in range(60):
         save(glow(text_img([(f'{mm:02d}', 30), ('min', 14)], TX1, TIME_Y, 'right')), f'time-m-{mm:02d}.png')
@@ -361,6 +400,10 @@ def build_images(out, raw, washer_photo, dryer_photo):
     for n in '1234':
         o = ov(); seg_text(o, ' ' + n, *L(TEMP_X, 192)); save(glow(o), f'dryer-dry-{n}.png')
     o = ov(); seg_text(o, '3', *L(RINSE_X, 192)); save(glow(o), 'dryer-wrinkle-3.png')     # Wrinkle Prevent on = 3 hours
+    # set time (Time Dry, Warm Air, Cool Air): minutes right-aligned in the '1888' cells, the clock symbol lit below
+    for m in DRYER_TIMES:
+        o = ov(); seg_text(o, f'{m:>4}', *L(SPIN_X, 192), narrow_first=True); save(glow(o), f'dryer-time-{m}.png')
+    o = ov(); put(o, I['clock'], SPIN_X, IY); save(glow(o), 'dryer-clock.png')
 
     # status icons (fixed 2x2 grid in the top-right of the display) and the printed Smart Control button
     o = ov(); put(o, I['wifi'], STAT_L, STAT_TOP); save(glow(o), 'wifi.png')
@@ -398,42 +441,147 @@ def time_and_bar(www, disp):
             mapped(www, f'sensor.{disp}_progress', {str(n): f'bar-{n}.png' for n in range(21)})]
 
 
-def washer_card(www, e, disp):
-    p, ms = f'binary_sensor.{e}_power', f'sensor.{e}_machine_state'
-    temp =mapped(www, f'select.{e}_water_temperature', {k: f'washer-temp-{k}.png' for k in WASHER_TEMPS})
-    rinse = mapped(www, f'number.{e}_rinse_cycles', {**{str(n): f'washer-rinse-{n}.png' for n in range(6)},
-                                                     **{f'{n}.0': f'washer-rinse-{n}.png' for n in range(6)}})
-    spin = mapped(www, f'select.{e}_spin_level', {k: f'washer-spin-{k}.png' for k in WASHER_SPINS})
-    stages = {**{k: f'washer-stage-{k}.png' for k in WASHER_STAGES}, 'bubble_soak': 'washer-stage-bubble_soak.png'}
-    els = [
-        cond([is_(p, 'on')], img(f'{www}/washer-base.png')),
-        cond([is_(p, 'on'), not_(ms, 'stop')], *time_and_bar(www, disp)),
-        cond([is_(p, 'on'), is_(ms, 'run')], mapped(www, f'sensor.{disp}_stage', stages)),   # job state, or bubble_soak
-        cond([is_(p, 'on'), is_(ms, 'pause')], img(f'{www}/washer-stage-paused.png')),
-        cond([is_(p, 'on'), is_(ms, 'run')], img(f'{www}/washer-doorlock.png')),
+# Where each reading comes from. SmartThings: Home Assistant's own integration. LocalThings: the HACS integration
+# that talks to the appliances on the local network (github.com/mbillow/localthings); it also reports the cycle,
+# the dryer's set time, and the time left and progress straight from the appliance.
+SOURCES = {
+    'smartthings': {
+        'ms': 'sensor.{e}_machine_state', 'run': 'run', 'pause': 'pause', 'idle': 'stop',
+        'job': 'sensor.{e}_job_state', 'remote': 'binary_sensor.{e}_remote_control',
+        'child': 'binary_sensor.{e}_child_lock', 'child_locked': 'on',
+        'temp': 'select.{e}_water_temperature', 'spin': 'select.{e}_spin_level', 'rinse': 'number.{e}_rinse_cycles',
+        'soak': 'switch.{e}_bubble_soak', 'wrinkle': 'switch.{e}_wrinkle_prevent',
+        'end': 'sensor.{e}_completion_time',
+    },
+    'localthings': {
+        'ms': 'sensor.{e}_machine_state', 'run': 'active', 'pause': 'pause', 'idle': 'idle',
+        'job': 'sensor.{e}_progress', 'remote': 'binary_sensor.{e}_smart_control',
+        'child': 'binary_sensor.{e}_child_lock', 'child_locked': 'off',     # a lock sensor: off means locked
+        'temp': 'select.{e}_wash_temperature', 'spin': 'select.{e}_spin_speed', 'rinse': 'select.{e}_rinse_cycles',
+        'soak': 'switch.{e}_bubble_soak', 'wrinkle': 'switch.{e}_wrinkle_prevent',
+        'wrinkle_active': 'binary_sensor.{e}_wrinkle_prevent_active',
+        'cycle': 'select.{e}_cycle', 'dry_time': 'select.{e}_dry_time', 'dry_level': 'select.{e}_dry_level',
+        'left': 'sensor.{e}_completion_time', 'percent': 'sensor.{e}_progress_percent',
+        'finish': 'sensor.{e}_estimated_finish',
+    },
+}
+DEFAULT_ENTITIES = {'smartthings': ('laundry_room_washer', 'laundry_room_dryer'),
+                    'localthings': ('samsung_washer_da_wm_tp1_21_common', 'samsung_dryer_da_wm_tp1_21_common')}
+# LocalThings' progress states -> the stage images (which are named after SmartThings' job states)
+LT_WASHER_STAGES = {'wash': 'wash', 'rinse': 'rinse', 'spin': 'spin', 'prewash': 'pre_wash', 'airwashing': 'air_wash',
+                    'weightsensing': 'weight_sensing', 'delaywash': 'delay_wash', 'drying': 'drying',
+                    'dryingwithdooropen': 'drying', 'cooling': 'cooling', 'finish': 'finish', 'steaming': 'steaming',
+                    'sanitizing': 'sanitizing', 'predrain': 'predrain'}
+LT_DRYER_STAGES = {'drying': 'drying', 'dryingwithdooropen': 'drying', 'cooling': 'cooling', 'delaywash': 'delay_wash',
+                   'finish': 'finished', 'weightsensing': 'weight_sensing', 'sanitizing': 'sanitizing',
+                   'airwashing': 'refreshing'}
+
+
+def lt_time(m): return f'{m // 60:02d}:{m % 60:02d}:00'          # LocalThings' dry_time options, e.g. 01:30:00
+
+
+def washer_card(www, e, disp, source='smartthings'):
+    S = SOURCES[source]; f = lambda k: S[k].format(e=e)
+    p, ms = f'binary_sensor.{e}_power', f('ms')
+    temp = mapped(www, f('temp'), {k: f'washer-temp-{k}.png' for k in WASHER_TEMPS})
+    rinse = mapped(www, f('rinse'), {**{str(n): f'washer-rinse-{n}.png' for n in range(6)},
+                                     **{f'{n}.0': f'washer-rinse-{n}.png' for n in range(6)}})
+    spin = mapped(www, f('spin'), {k: f'washer-spin-{k}.png' for k in WASHER_SPINS})
+    if source == 'localthings':
+        stages = {k: f'washer-stage-{v}.png' for k, v in LT_WASHER_STAGES.items()}
+    else:
+        stages = {k: f'washer-stage-{k}.png' for k in WASHER_STAGES}
+    stages['bubble_soak'] = 'washer-stage-bubble_soak.png'
+    els = [cond([is_(p, 'on')], img(f'{www}/washer-base.png'))]
+    if 'cycle' in S:                                       # the cycle name stays lit, idle or running
+        els.append(cond([is_(p, 'on')], mapped(www, f('cycle'), {k: f'washer-cycle-{k}.png' for k in WASHER_CYCLES})))
+    els += [
+        cond([is_(p, 'on'), not_(ms, S['idle'])], *time_and_bar(www, disp)),
+        cond([is_(p, 'on'), is_(ms, S['run'])], mapped(www, f'sensor.{disp}_stage', stages)),   # job state, or bubble_soak
+        cond([is_(p, 'on'), is_(ms, S['pause'])], img(f'{www}/washer-stage-paused.png')),
+        cond([is_(p, 'on'), is_(ms, S['run'])], img(f'{www}/washer-doorlock.png')),
         cond([is_(p, 'on')], temp, rinse, spin),          # the settings stay lit, idle or running
-    ] + status(www, e)
+    ] + status(www, e, source)
     return {'type': 'picture-elements', 'image': f'{www}/washer-bg.png', 'elements': els, 'grid_options': {'columns': 12}}
 
 
-def dryer_card(www, e, disp):
-    p, ms, js = f'binary_sensor.{e}_power', f'sensor.{e}_machine_state', f'sensor.{e}_job_state'
+def dryer_card(www, e, disp, source='smartthings'):
+    S = SOURCES[source]; f = lambda k: S[k].format(e=e)
+    p, ms, js = f'binary_sensor.{e}_power', f('ms'), f('job')
     els = [
         cond([is_(p, 'on')], img(f'{www}/dryer-base.png')),
-        cond([is_(p, 'on'), is_(f'switch.{e}_wrinkle_prevent', 'on')], img(f'{www}/dryer-wrinkle-3.png')),
-        cond([is_(p, 'on'), not_(ms, 'stop')], *time_and_bar(www, disp)),
-        cond([is_(p, 'on'), is_(ms, 'run')], mapped(www, js, {k: f'dryer-stage-{k}.png' for k in DRYER_STAGES})),
-        cond([is_(p, 'on'), is_(ms, 'pause')], img(f'{www}/dryer-stage-paused.png')),
-    ] + status(www, e)
-    return {'type': 'picture-elements', 'image': f'{www}/dryer-bg.png', 'elements': els, 'grid_options': {'columns': 12}}
+        cond([is_(p, 'on'), is_(f('wrinkle'), 'on')], img(f'{www}/dryer-wrinkle-3.png')),
+    ]
+    if 'cycle' in S:
+        # cycle name, and for timed cycles the set time over the lit clock symbol, idle or running
+        times = [m for m in DRYER_TIMES]
+        els.append(cond([is_(p, 'on')],
+                        mapped(www, f('cycle'), {k: f'dryer-cycle-{k}.png' for k in DRYER_CYCLES}),
+                        mapped(www, f('dry_time'), {lt_time(m): f'dryer-time-{m}.png' for m in times}),
+                        mapped(www, f('dry_time'), {lt_time(m): 'dryer-clock.png' for m in times})))
+        # sensor cycles (no set time) show the dry level, lit over its symbol, as the panel does
+        levels = {k: f'dryer-dry-{n}.png' for k, n in DRY_LEVELS.items()}
+        els.append(cond([is_(p, 'on'), is_(f('dry_time'), lt_time(0))],
+                        mapped(www, f('dry_level'), levels),
+                        mapped(www, f('dry_level'), {k: 'dryer-level.png' for k in DRY_LEVELS})))
+    els.append(cond([is_(p, 'on'), not_(ms, S['idle'])], *time_and_bar(www, disp)))
+    if source == 'localthings':
+        # LocalThings reports the post-cycle Wrinkle Prevent tumble separately from the progress
+        stages = {k: f'dryer-stage-{v}.png' for k, v in LT_DRYER_STAGES.items()}
+        els += [cond([is_(p, 'on'), is_(ms, S['run']), not_(f('wrinkle_active'), 'on')], mapped(www, js, stages)),
+                cond([is_(p, 'on'), is_(f('wrinkle_active'), 'on')], img(f'{www}/dryer-stage-wrinkle_prevent.png'))]
+    else:
+        els.append(cond([is_(p, 'on'), is_(ms, S['run'])], mapped(www, js, {k: f'dryer-stage-{k}.png' for k in DRYER_STAGES})))
+    els.append(cond([is_(p, 'on'), is_(ms, S['pause'])], img(f'{www}/dryer-stage-paused.png')))
+    return {'type': 'picture-elements', 'image': f'{www}/dryer-bg.png', 'elements': els + status(www, e, source),
+            'grid_options': {'columns': 12}}
 
 
-def status(www, e):
-    p = f'binary_sensor.{e}_power'
+def status(www, e, source='smartthings'):
+    S = SOURCES[source]; f = lambda k: S[k].format(e=e)
+    p, remote = f'binary_sensor.{e}_power', f('remote')
     return [img(f'{www}/smart-control-button.png'),
-            cond([is_(p, 'on'), not_(f'binary_sensor.{e}_remote_control', 'on')], img(f'{www}/wifi.png')),
-            cond([is_(p, 'on'), is_(f'binary_sensor.{e}_remote_control', 'on')], img(f'{www}/wifi-smart-control.png')),
-            cond([is_(p, 'on'), is_(f'binary_sensor.{e}_child_lock', 'on')], img(f'{www}/childlock.png'))]
+            cond([is_(p, 'on'), not_(remote, 'on')], img(f'{www}/wifi.png')),
+            cond([is_(p, 'on'), is_(remote, 'on')], img(f'{www}/wifi-smart-control.png')),
+            cond([is_(p, 'on'), is_(f('child'), S['child_locked'])], img(f'{www}/childlock.png'))]
+
+
+def package_localthings(machines):
+    """Template sensors the cards read, from LocalThings. The appliance reports the time left (minutes) and its own
+    progress, so no cycle-start bookkeeping is needed and a restart mid-cycle doesn't reset the bar."""
+    S = SOURCES['localthings']
+    sensors = []
+    for label, e, disp, soak in machines:
+        f = lambda k: S[k].format(e=e)
+        base = (f"{{%- set ms = states('{f('ms')}') -%}}\n"
+                "{%- set running = ms in ['active', 'pause'] -%}\n"
+                f"{{%- set m = states('{f('left')}') | int(0) -%}}\n"
+                # Delay End shows the finish time instead of the time left
+                f"{{%- set delay = states('{f('job')}') == 'delaywash' -%}}\n"
+                f"{{%- set end = states('{f('finish')}') | as_datetime(none) -%}}\n"
+                "{%- set at = as_local(end + timedelta(seconds=30)) if running and end is not none else none -%}\n")
+        sensors += [
+            {'name': f'{label} hours', 'unique_id': f'{disp}_hours', 'icon': 'mdi:monitor',
+             'state': base + ("{%- if running and delay and at is not none -%}\n"
+                              "{{ 'next day ' if at.date() > now().date() else '' }}{{ at.hour % 12 or 12 }} {{ 'am' if at.hour < 12 else 'pm' }}\n"
+                              "{%- elif running and m >= 60 -%}{{ m // 60 }}{%- endif -%}")},
+            {'name': f'{label} minutes', 'unique_id': f'{disp}_minutes', 'icon': 'mdi:monitor',
+             'state': base + ("{%- if running and delay and at is not none -%}{{ ':%02d' | format(at.minute) }}\n"
+                              "{%- elif running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}")},
+            {'name': f'{label} progress', 'unique_id': f'{disp}_progress', 'icon': 'mdi:monitor',
+             'state': (f"{{%- if states('{f('ms')}') in ['active', 'pause'] -%}}\n"
+                       f"{{{{ [[(states('{f('percent')}') | float(0) / 5) | round(0) | int, 0] | max, 20] | min }}}}\n"
+                       "{%- else -%}0{%- endif -%}")},
+        ]
+        if soak:
+            sensors.append(
+                {'name': f'{label} stage', 'unique_id': f'{disp}_stage', 'icon': 'mdi:monitor',
+                 'state': (f"{{%- set js = states('{f('job')}') -%}}\n"
+                           f"{{%- set left = states('{f('left')}') | int(-1) -%}}\n"
+                           f"{{%- if js == 'wash' and is_state('{f('soak')}', 'on') and "
+                           f"{BUBBLE_SOAK_ENDS_LEFT} <= left < {BUBBLE_SOAK_ENDS_LEFT + BUBBLE_SOAK_MIN} -%}}bubble_soak\n"
+                           "{%- else -%}{{ js }}{%- endif -%}")})
+    return {'template': [{'sensor': sensors}]}
 
 
 def package(machines):
@@ -505,16 +653,17 @@ def dump(obj, path, header):
     path.write_text(header + yaml.safe_dump(lit(obj), sort_keys=False, allow_unicode=True, width=200))
 
 
-def write_yaml(out, www, we, de):
-    wd, dd = 'samsung_washer_display', 'samsung_dryer_display'
+def write_yaml(out, www, we, de, source='smartthings', wd='samsung_washer_display', dd='samsung_dryer_display'):
     (out / 'packages').mkdir(parents=True, exist_ok=True); (out / 'cards').mkdir(parents=True, exist_ok=True)
-    dump(package([('Samsung washer display', we, wd, True), ('Samsung dryer display', de, dd, False)]),
+    pkg = package_localthings if source == 'localthings' else package
+    dump(pkg([('Samsung washer display', we, wd, True), ('Samsung dryer display', de, dd, False)]),
          out / 'packages' / 'samsung_laundry_package.yaml',
-         '# Home Assistant package: template sensors used by the washer and dryer cards.\n'
+         '# Home Assistant package: template sensors used by the washer and dryer cards'
+         f' ({"LocalThings" if source == "localthings" else "SmartThings"}).\n'
          '# Put this file in /config/packages/ (see README) and restart Home Assistant.\n')
-    dump(washer_card(www, we, wd), out / 'cards' / 'washer-card.yaml',
+    dump(washer_card(www, we, wd, source), out / 'cards' / 'washer-card.yaml',
          '# Washer card: Dashboard > Edit > Add card > Manual, then paste.\n')
-    dump(dryer_card(www, de, dd), out / 'cards' / 'dryer-card.yaml',
+    dump(dryer_card(www, de, dd, source), out / 'cards' / 'dryer-card.yaml',
          '# Dryer card: Dashboard > Edit > Add card > Manual, then paste.\n')
 
 
@@ -532,9 +681,15 @@ def main():
     ap.add_argument('--dryer-image', default=str(ROOT / 'images' / 'dryer.png'),
                     help='front photo of the dryer, PNG with a transparent background (default: images/dryer.png)')
     ap.add_argument('--no-photos', action='store_true', help='leave the appliance photos out and show just the panel')
-    ap.add_argument('--washer-entities', default='laundry_room_washer',
-                    help='SmartThings entity prefix, e.g. laundry_room_washer for sensor.laundry_room_washer_machine_state')
-    ap.add_argument('--dryer-entities', default='laundry_room_dryer', help='as above, for the dryer')
+    ap.add_argument('--source', choices=sorted(SOURCES), default='smartthings',
+                    help='the integration the cards read: smartthings (Home Assistant\'s own) or localthings '
+                         '(local; adds the cycle name and the dryer\'s set time)')
+    ap.add_argument('--washer-entities', default=None,
+                    help='entity prefix, e.g. laundry_room_washer for sensor.laundry_room_washer_machine_state '
+                         '(default: laundry_room_washer, or samsung_washer_da_wm_tp1_21_common with LocalThings)')
+    ap.add_argument('--dryer-entities', default=None, help='as above, for the dryer')
+    ap.add_argument('--washer-display', default='samsung_washer_display', help='prefix for the template sensors')
+    ap.add_argument('--dryer-display', default='samsung_dryer_display', help='as above, for the dryer')
     ap.add_argument('--www-path', default='/local/samsung-laundry', help='URL path the images are served from')
     ap.add_argument('--yaml-only', action='store_true', help='write the YAML files only')
     a = ap.parse_args()
@@ -547,7 +702,8 @@ def main():
         imgs = image_dir(out, www); imgs.mkdir(parents=True, exist_ok=True)
         build_images(imgs, load_icons(), *photos)
         print(f"Built {len(list(imgs.glob('*.png')))} images in {imgs}")
-    write_yaml(out, www, a.washer_entities, a.dryer_entities)
+    we, de = DEFAULT_ENTITIES[a.source]
+    write_yaml(out, www, a.washer_entities or we, a.dryer_entities or de, a.source, a.washer_display, a.dryer_display)
     print(f"Wrote the cards to {out / 'cards'} and the template sensors to {out / 'packages'}")
 
 

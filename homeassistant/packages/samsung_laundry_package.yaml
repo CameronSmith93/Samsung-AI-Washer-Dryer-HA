@@ -1,4 +1,4 @@
-# Home Assistant package: template sensors used by the washer and dryer cards.
+# Home Assistant package: template sensors used by the washer and dryer cards (SmartThings).
 # Put this file in /config/packages/ (see README) and restart Home Assistant.
 template:
 - sensor:

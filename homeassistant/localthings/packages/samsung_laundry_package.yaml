@@ -1,0 +1,76 @@
+# Home Assistant package: template sensors used by the washer and dryer cards (LocalThings).
+# Put this file in /config/packages/ (see README) and restart Home Assistant.
+template:
+- sensor:
+  - name: Samsung washer display hours
+    unique_id: samsung_washer_display_hours
+    icon: mdi:monitor
+    state: |-
+      {%- set ms = states('sensor.samsung_washer_da_wm_tp1_21_common_machine_state') -%}
+      {%- set running = ms in ['active', 'pause'] -%}
+      {%- set m = states('sensor.samsung_washer_da_wm_tp1_21_common_completion_time') | int(0) -%}
+      {%- set delay = states('sensor.samsung_washer_da_wm_tp1_21_common_progress') == 'delaywash' -%}
+      {%- set end = states('sensor.samsung_washer_da_wm_tp1_21_common_estimated_finish') | as_datetime(none) -%}
+      {%- set at = as_local(end + timedelta(seconds=30)) if running and end is not none else none -%}
+      {%- if running and delay and at is not none -%}
+      {{ 'next day ' if at.date() > now().date() else '' }}{{ at.hour % 12 or 12 }} {{ 'am' if at.hour < 12 else 'pm' }}
+      {%- elif running and m >= 60 -%}{{ m // 60 }}{%- endif -%}
+  - name: Samsung washer display minutes
+    unique_id: samsung_washer_display_minutes
+    icon: mdi:monitor
+    state: |-
+      {%- set ms = states('sensor.samsung_washer_da_wm_tp1_21_common_machine_state') -%}
+      {%- set running = ms in ['active', 'pause'] -%}
+      {%- set m = states('sensor.samsung_washer_da_wm_tp1_21_common_completion_time') | int(0) -%}
+      {%- set delay = states('sensor.samsung_washer_da_wm_tp1_21_common_progress') == 'delaywash' -%}
+      {%- set end = states('sensor.samsung_washer_da_wm_tp1_21_common_estimated_finish') | as_datetime(none) -%}
+      {%- set at = as_local(end + timedelta(seconds=30)) if running and end is not none else none -%}
+      {%- if running and delay and at is not none -%}{{ ':%02d' | format(at.minute) }}
+      {%- elif running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}
+  - name: Samsung washer display progress
+    unique_id: samsung_washer_display_progress
+    icon: mdi:monitor
+    state: |-
+      {%- if states('sensor.samsung_washer_da_wm_tp1_21_common_machine_state') in ['active', 'pause'] -%}
+      {{ [[(states('sensor.samsung_washer_da_wm_tp1_21_common_progress_percent') | float(0) / 5) | round(0) | int, 0] | max, 20] | min }}
+      {%- else -%}0{%- endif -%}
+  - name: Samsung washer display stage
+    unique_id: samsung_washer_display_stage
+    icon: mdi:monitor
+    state: |-
+      {%- set js = states('sensor.samsung_washer_da_wm_tp1_21_common_progress') -%}
+      {%- set left = states('sensor.samsung_washer_da_wm_tp1_21_common_completion_time') | int(-1) -%}
+      {%- if js == 'wash' and is_state('switch.samsung_washer_da_wm_tp1_21_common_bubble_soak', 'on') and 52 <= left < 82 -%}bubble_soak
+      {%- else -%}{{ js }}{%- endif -%}
+  - name: Samsung dryer display hours
+    unique_id: samsung_dryer_display_hours
+    icon: mdi:monitor
+    state: |-
+      {%- set ms = states('sensor.samsung_dryer_da_wm_tp1_21_common_machine_state') -%}
+      {%- set running = ms in ['active', 'pause'] -%}
+      {%- set m = states('sensor.samsung_dryer_da_wm_tp1_21_common_completion_time') | int(0) -%}
+      {%- set delay = states('sensor.samsung_dryer_da_wm_tp1_21_common_progress') == 'delaywash' -%}
+      {%- set end = states('sensor.samsung_dryer_da_wm_tp1_21_common_estimated_finish') | as_datetime(none) -%}
+      {%- set at = as_local(end + timedelta(seconds=30)) if running and end is not none else none -%}
+      {%- if running and delay and at is not none -%}
+      {{ 'next day ' if at.date() > now().date() else '' }}{{ at.hour % 12 or 12 }} {{ 'am' if at.hour < 12 else 'pm' }}
+      {%- elif running and m >= 60 -%}{{ m // 60 }}{%- endif -%}
+  - name: Samsung dryer display minutes
+    unique_id: samsung_dryer_display_minutes
+    icon: mdi:monitor
+    state: |-
+      {%- set ms = states('sensor.samsung_dryer_da_wm_tp1_21_common_machine_state') -%}
+      {%- set running = ms in ['active', 'pause'] -%}
+      {%- set m = states('sensor.samsung_dryer_da_wm_tp1_21_common_completion_time') | int(0) -%}
+      {%- set delay = states('sensor.samsung_dryer_da_wm_tp1_21_common_progress') == 'delaywash' -%}
+      {%- set end = states('sensor.samsung_dryer_da_wm_tp1_21_common_estimated_finish') | as_datetime(none) -%}
+      {%- set at = as_local(end + timedelta(seconds=30)) if running and end is not none else none -%}
+      {%- if running and delay and at is not none -%}{{ ':%02d' | format(at.minute) }}
+      {%- elif running and m > 0 -%}{{ '%02d' | format(m % 60) }}{%- endif -%}
+  - name: Samsung dryer display progress
+    unique_id: samsung_dryer_display_progress
+    icon: mdi:monitor
+    state: |-
+      {%- if states('sensor.samsung_dryer_da_wm_tp1_21_common_machine_state') in ['active', 'pause'] -%}
+      {{ [[(states('sensor.samsung_dryer_da_wm_tp1_21_common_progress_percent') | float(0) / 5) | round(0) | int, 0] | max, 20] | min }}
+      {%- else -%}0{%- endif -%}
